@@ -390,41 +390,101 @@ function normalizeExam(raw, lines) {
 }
 
 /* =================== file reading =================== */
-async function readFile(file) {
+async function readFile(file, forceOcr) {
   const name = file.name.toLowerCase();
   if (name.endsWith(".json")) return { kind: "json", text: await file.text() };
-  if (name.endsWith(".pdf") || file.type === "application/pdf") return readPdf(file);
+  if (name.endsWith(".pdf") || file.type === "application/pdf") return readPdf(file, forceOcr);
   if (name.endsWith(".docx")) {
     if (!window.mammoth) throw new Error("Không tải được thư viện đọc Word. Hãy lưu file thành PDF hoặc TXT rồi thử lại.");
     const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
     return { kind: "text", text: r.value };
   }
-  if (file.type.startsWith("image/")) return { kind: "images", images: [file] };
+  if (file.type.startsWith("image/")) return { kind: "pages", pages: [{ n: 1, image: file }] };
   if (name.endsWith(".doc")) throw new Error("File .doc (Word cũ) chưa hỗ trợ. Hãy mở trong Word và lưu lại dạng .docx hoặc .pdf.");
   return { kind: "text", text: await file.text() };
 }
-async function readPdf(file) {
+async function readPdf(file, forceOcr) {
   if (!window.pdfjsLib) throw new Error("Không tải được thư viện đọc PDF. Hãy tải lại trang và thử lại.");
   pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-  let text = "";
+  let pdf;
+  try { pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise; }
+  catch (e) { throw new Error(/password/i.test(e?.name + e?.message) ? "PDF có mật khẩu. Hãy gỡ mật khẩu rồi tải lại." : "Không mở được file PDF này (" + (e?.message || e) + ")."); }
+  const pages = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
-    const tc = await page.getTextContent();
-    for (const it of tc.items) { text += it.str; text += it.hasEOL ? "\n" : (it.str.endsWith(" ") ? "" : " "); }
-    text += "\n";
+    let text = "";
+    try { const tc = await page.getTextContent(); for (const it of tc.items) { text += it.str; text += it.hasEOL ? "\n" : (it.str.endsWith(" ") ? "" : " "); } } catch {}
+    const letters = (text.match(/[A-Za-z]/g) || []).length;
+    // a page is "scanned" when it has almost no real text layer, or the layer is mostly junk
+    const scanned = forceOcr || letters < 60 || letters / Math.max(1, text.replace(/\s/g, "").length) < 0.5;
+    pages.push({ n: i, page, text, scanned });
   }
-  if (text.replace(/\s/g, "").length > 200 * Math.min(pdf.numPages, 3)) return { kind: "text", text };
-  // scanned PDF → render pages to images
-  const images = [];
-  for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
-    const page = await pdf.getPage(i);
-    const vp = page.getViewport({ scale: 1.6 });
-    const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
-    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
-    images.push(await new Promise(r => c.toBlob(r, "image/jpeg", 0.85)));
+  if (!pages.some(p => p.scanned)) return { kind: "text", text: pages.map(p => p.text).join("\n") };
+  return { kind: "pages", pages, total: pdf.numPages };
+}
+/* render one PDF page (or an image file) into 1–2 JPEG slices: top & bottom halves keep small print readable */
+async function pageImages(p, halves) {
+  let c;
+  if (p.page) {
+    const base = p.page.getViewport({ scale: 1 });
+    const vp = p.page.getViewport({ scale: Math.min(3, 1800 / base.width) });
+    c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    await p.page.render({ canvasContext: ctx, viewport: vp }).promise;
+  } else {
+    const bmp = await createImageBitmap(p.image);
+    const k = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+    c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
   }
-  return { kind: "images", images, scanned: true };
+  const toJpeg = cv => new Promise(r => cv.toBlob(r, "image/jpeg", 0.9));
+  if (!halves || c.height < c.width * 1.1) return [await toJpeg(c)];
+  const ov = Math.round(c.height * 0.04), h = Math.ceil(c.height / 2) + ov, out = [];
+  for (const y of [0, c.height - h]) {
+    const s = document.createElement("canvas"); s.width = c.width; s.height = h;
+    s.getContext("2d").drawImage(c, 0, y, c.width, h, 0, 0, c.width, h);
+    out.push(await toJpeg(s));
+  }
+  return out;
+}
+const OCR_PROMPT = halves => `This is ${halves ? "one page of an IELTS test, split into its TOP half (image 1) and BOTTOM half (image 2); the halves overlap slightly, so do not repeat the overlapping line" : "one page of an IELTS test"}.
+Transcribe ALL text on the page exactly as printed, in reading order. Rules:
+- Keep question numbers, option letters (A, B, C…), paragraph letters, roman numerals, headings and instructions such as "Write NO MORE THAN TWO WORDS".
+- Write blanks/gaps as "______" and keep any question number printed next to them.
+- Two-column layouts: transcribe the left column fully, then the right column.
+- Tables: one row per line, cells separated by " | ".
+- Charts, graphs, maps, diagrams (e.g. Writing Task 1): write [FIGURE: …] with a full description including the title, axis labels, categories and every value you can read.
+- Ignore page numbers, watermarks, publisher footers and handwriting.
+- If the page is blank or contains nothing readable, output exactly: [BLANK]
+Output only the transcription, no comments.`;
+async function ocrPages(pages, signal) {
+  const lim = await cap.sample.limits().catch(() => null);
+  if (!lim?.images) throw Object.assign(new Error("Chế độ xem này không gửi được ảnh cho Claude, nên chưa quét được PDF scan. Hãy mở trang trên claude.ai (trình duyệt hoặc ứng dụng máy tính), hoặc chuyển PDF sang dạng có chữ (OCR) rồi tải lại."), { code: "no_images" });
+  const halves = lim.images.maxCount >= 2;
+  const todo = pages.filter(p => p.scanned), info = $("#streamInfo");
+  let done = 0, failed = [];
+  const paint = () => { if (info) info.textContent = `Đã quét ${done}/${todo.length} trang scan…`; };
+  paint();
+  let idx = 0;
+  const worker = async () => {
+    while (idx < todo.length) {
+      const p = todo[idx++];
+      if (signal.aborted) return;
+      try {
+        const imgs = await pageImages(p, halves);
+        const { text } = await cap.sample(OCR_PROMPT(imgs.length > 1), { images: imgs, modelTier: "default", effort: "low", signal, cache: { gcTime: 86400000 } });
+        p.text = /^\s*\[BLANK\]\s*$/.test(text) ? "" : text;
+      } catch (e) {
+        if (["cancelled", "not_granted", "rate_limited", "sampling_disabled", "session_expired", "images_unavailable"].includes(e?.code)) throw e;
+        failed.push(p.n); p.text = p.text || "";
+      }
+      done++; paint();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  if (failed.length) progressNote(`Không đọc được ${failed.length} trang (trang ${failed.sort((a, b) => a - b).join(", ")}). Các trang còn lại vẫn được dùng.`);
+  if (failed.length === todo.length) throw new Error("Không quét được trang nào. Hãy thử ảnh chụp rõ hơn hoặc PDF có chất lượng cao hơn.");
+  return pages.map(p => `\n=== Page ${p.n} ===\n${p.text}`).join("\n");
 }
 
 /* =================== Claude parsing =================== */
@@ -478,37 +538,43 @@ ${isImages ? "" : "\nDOCUMENT:\n" + numbered}`;
 }
 
 let parseCtl = null;
-async function importFile(file, pastedText) {
-  showProgress(["Đọc file", "Claude phân tích cấu trúc đề", "Tạo bài thi"], 0, file ? file.name : "Văn bản đã dán");
+async function importFile(files, pastedText) {
+  files = files ? Array.from(files) : [];
+  const forceOcr = !!$("#ocrForce")?.checked;
+  const label = files.length > 1 ? `${files.length} ảnh` : files[0] ? files[0].name : "Văn bản đã dán";
+  showProgress(["Đọc file", "Quét trang scan (OCR)", "Claude phân tích cấu trúc đề", "Tạo bài thi"], 0, label);
+  parseCtl = new AbortController();
   try {
-    const src = file ? await readFile(file) : { kind: "text", text: pastedText };
+    let src;
+    if (!files.length) src = { kind: "text", text: pastedText };
+    else if (files.length > 1) {
+      const imgs = files.filter(f => f.type.startsWith("image/")).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      if (!imgs.length) throw new Error("Khi chọn nhiều file, hãy chọn các ảnh chụp trang đề (jpg, png).");
+      src = { kind: "pages", pages: imgs.map((f, i) => ({ n: i + 1, image: f, scanned: true })) };
+    } else src = await readFile(files[0], forceOcr);
+    if (src.kind === "pages") {
+      src.pages.forEach(p => { if (p.image) p.scanned = true; });
+      if (!cap.sample) throw new Error("File ảnh / PDF scan cần Claude để đọc, nhưng Claude không khả dụng ở chế độ xem này. Hãy mở trang trên claude.ai, hoặc dùng PDF có chữ, DOCX, TXT.");
+      setProgress(1);
+      src = { kind: "text", text: await ocrPages(src.pages, parseCtl.signal) };
+    }
     let raw, lines = null;
     if (src.kind === "json") {
       raw = JSON.parse(src.text);
-      setProgress(2);
+      setProgress(3);
     } else {
-      setProgress(1);
-      const sample = cap.sample;
-      if (src.kind === "text") {
-        const text = src.text.replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
-        lines = text.split("\n");
-        if (!sample) {
-          raw = heuristicParse(text);
-          progressNote("Claude không khả dụng ở chế độ xem này — dùng bộ đọc đơn giản (chỉ nhận dạng trắc nghiệm A–D và đáp án dạng “1. B”).");
-        } else {
-          let numbered = lines.map((l, i) => `L${i + 1}| ${l}`).join("\n");
-          if (numbered.length > 200000) { numbered = numbered.slice(0, 200000); progressNote("Đề quá dài, chỉ phần đầu (~200.000 ký tự) được phân tích."); }
-          raw = await askJson(parsePrompt(numbered, false));
-        }
-      } else {
-        if (!sample) throw new Error("File ảnh / PDF scan cần Claude để đọc, nhưng tính năng này không khả dụng ở đây. Hãy mở trang trong claude.ai hoặc tải file PDF có chữ, DOCX, TXT.");
-        const lim = await sample.limits().catch(() => null);
-        if (!lim?.images) throw new Error("Chế độ xem này không gửi được ảnh cho Claude. Hãy dùng PDF có chữ, DOCX hoặc TXT.");
-        let imgs = src.images;
-        if (imgs.length > lim.images.maxCount) { imgs = imgs.slice(0, lim.images.maxCount); progressNote(`PDF scan dài — chỉ ${lim.images.maxCount} trang đầu được đọc.`); }
-        raw = await askJson(parsePrompt("", true), imgs);
-      }
       setProgress(2);
+      const text = src.text.replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+      lines = text.split("\n");
+      if (!cap.sample) {
+        raw = heuristicParse(text);
+        progressNote("Claude không khả dụng ở chế độ xem này — dùng bộ đọc đơn giản (chỉ nhận dạng trắc nghiệm A–D và đáp án dạng “1. B”).");
+      } else {
+        let numbered = lines.map((l, i) => `L${i + 1}| ${l}`).join("\n");
+        if (numbered.length > 200000) { numbered = numbered.slice(0, 200000); progressNote("Đề quá dài, chỉ phần đầu (~200.000 ký tự) được phân tích."); }
+        raw = await askJson(parsePrompt(numbered, false));
+      }
+      setProgress(3);
     }
     const exam = normalizeExam(raw, lines);
     S.examId = addToLib(exam);
@@ -516,14 +582,13 @@ async function importFile(file, pastedText) {
     openReady(exam);
   } catch (e) {
     if (e?.code === "cancelled") { closeLayer(); return; }
+    console.error(e);
     progressError(errText(e));
   }
 }
-async function askJson(prompt, images) {
-  parseCtl = new AbortController();
-  const opts = { signal: parseCtl.signal, modelTier: "default", onText: ({ text }) => { const el = $("#streamInfo"); if (el) el.textContent = `Đã nhận ${text.length.toLocaleString("vi-VN")} ký tự…`; } };
-  if (images) opts.images = images;
-  return cap.sample.json(prompt, opts);
+async function askJson(prompt) {
+  const info = $("#streamInfo"); if (info) info.textContent = "Claude đang đọc đề (thường 30 giây – 2 phút)…";
+  return cap.sample.json(prompt, { signal: parseCtl.signal, modelTier: "default", onText: ({ text }) => { const el = $("#streamInfo"); if (el) el.textContent = `Đã nhận ${text.length.toLocaleString("vi-VN")} ký tự…`; } });
 }
 function errText(e) {
   const m = {
@@ -533,11 +598,13 @@ function errText(e) {
     invalid_json: "Claude trả về kết quả không đọc được. Bấm thử lại; nếu vẫn lỗi, hãy tách đề nhỏ hơn.",
     refused: "Claude từ chối xử lý nội dung này.",
     sampling_disabled: "Claude không khả dụng cho tài khoản này.",
+    images_unavailable: "Chế độ xem này không gửi được ảnh cho Claude. Hãy mở trang trên claude.ai trong trình duyệt hoặc ứng dụng máy tính.",
     image_rejected: "Ảnh không đọc được (sai định dạng hoặc quá lớn).",
     session_expired: "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.",
     upstream_error: "Kết nối tới Claude bị gián đoạn. Thử lại."
   };
-  if (e?.code) return m[e.code] || ("Lỗi: " + (e.message || e.code));
+  if (e?.code && m[e.code]) return m[e.code] + " (mã: " + e.code + ")";
+  if (e?.code && e.code !== "no_images") return "Lỗi: " + (e.message || "") + " (mã: " + e.code + ")";
   return e?.message || String(e);
 }
 
@@ -615,7 +682,9 @@ function viewHome() {
       <div class="drop" id="drop">
         <div class="big">Kéo thả file đề vào đây</div>
         <div class="formats"><span>.pdf</span><span>.docx</span><span>.txt</span><span>.jpg/.png</span><span>.json</span></div>
-        <div class="row" style="justify-content:center"><label class="btn primary" for="fileIn">Chọn file đề</label><input id="fileIn" type="file" hidden accept=".pdf,.docx,.txt,.md,.json,image/*"><button class="btn" data-act="sample">Thử đề mẫu</button></div>
+        <div class="row" style="justify-content:center"><label class="btn primary" for="fileIn">Chọn file đề</label><input id="fileIn" type="file" hidden accept=".pdf,.docx,.txt,.md,.json,image/*" multiple><button class="btn" data-act="sample">Thử đề mẫu</button></div>
+        <label class="muted" style="font-size:13px;display:flex;gap:8px;align-items:center"><input type="checkbox" id="ocrForce"> PDF scan hoặc chữ copy ra bị lỗi: quét bằng hình ảnh</label>
+        <div class="muted" style="font-size:13px">Ảnh chụp nhiều trang: chọn tất cả ảnh cùng lúc, sắp theo tên file.</div>
         <div class="paste">
           <label class="label" for="pasteIn">Hoặc dán nội dung đề</label>
           <textarea id="pasteIn" placeholder="Dán đoạn văn, câu hỏi và đáp án (nếu có)…"></textarea>
@@ -625,7 +694,7 @@ function viewHome() {
       <div style="display:grid;gap:16px">
         <div class="panel"><h2>Trạng thái</h2><div class="status">${aiState}</div></div>
         <div class="panel"><h2>Cách hoạt động</h2><ol class="steps">
-          <li>Tải đề lên. Có đáp án trong file thì dùng đáp án đó; không có thì Claude tự giải và đánh dấu “AI”.</li>
+          <li>Tải đề lên (PDF scan và ảnh chụp được Claude quét từng trang). Có đáp án trong file thì dùng đáp án đó; không có thì Claude tự giải và đánh dấu “AI”.</li>
           <li>Chọn kỹ năng muốn thi và chế độ tính giờ.</li>
           <li>Làm bài. Listening: tải file audio, hoặc nghe giọng đọc từ transcript.</li>
           <li>Nộp bài để xem band. Writing và Speaking được Claude chấm theo 4 tiêu chí.</li></ol></div>
@@ -1066,7 +1135,7 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("change", e => {
   const t = e.target;
-  if (t.id === "fileIn" && t.files[0]) { importFile(t.files[0]); t.value = ""; return; }
+  if (t.id === "fileIn" && t.files.length) { importFile(t.files); t.value = ""; return; }
   if (t.id === "audioIn" && t.files[0]) { const k = S.part; if (audioURLs[k]) URL.revokeObjectURL(audioURLs[k]); audioURLs[k] = URL.createObjectURL(t.files[0]); if (k === 0 && !audioURLs.all) audioURLs.all = audioURLs[k]; render(); return; }
   if (t.dataset.sel) { S.sel[t.dataset.sel] = t.checked; render(); return; }
   if (t.dataset.qm) {
@@ -1088,7 +1157,7 @@ function railPaint() {
 }
 document.addEventListener("dragover", e => { const d = $("#drop"); if (d) { e.preventDefault(); d.classList.add("over"); } });
 document.addEventListener("dragleave", e => { if (!e.relatedTarget) $("#drop")?.classList.remove("over"); });
-document.addEventListener("drop", e => { const d = $("#drop"); if (!d) return; e.preventDefault(); d.classList.remove("over"); const f = e.dataTransfer?.files?.[0]; if (f) importFile(f); });
+document.addEventListener("drop", e => { const d = $("#drop"); if (!d) return; e.preventDefault(); d.classList.remove("over"); const f = e.dataTransfer?.files; if (f?.length) importFile(f); });
 
 render();
 initCaps();
