@@ -1,0 +1,1277 @@
+<title>BandUp IELTS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+/* Layout: exam-room shell — fixed top bar (section tabs + clock), split work area (source | answers), question-number rail at the bottom */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --sunk:#f6f8fb; --ink:#152038; --muted:#5a6479; --line:#d6dce6;
+  --accent:#2347c5; --accent-ink:#ffffff; --accent-soft:#e3e9fb;
+  --flag:#b45309; --flag-soft:#fdf0dc; --ok:#167a3e; --ok-soft:#e1f3e8; --bad:#b4371a; --bad-soft:#fbe6df;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-read:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --font-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1220; --surface:#151c2d; --sunk:#111827; --ink:#e5e9f2; --muted:#9aa4b8; --line:#2a3349;
+  --accent:#7d9cff; --accent-ink:#0d1220; --accent-soft:#1d2848;
+  --flag:#f3a43b; --flag-soft:#3a2a12; --ok:#4fd28a; --ok-soft:#123224; --bad:#ff8a66; --bad-soft:#3d1d14; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1220; --surface:#151c2d; --sunk:#111827; --ink:#e5e9f2; --muted:#9aa4b8; --line:#2a3349;
+  --accent:#7d9cff; --accent-ink:#0d1220; --accent-soft:#1d2848;
+  --flag:#f3a43b; --flag-soft:#3a2a12; --ok:#4fd28a; --ok-soft:#123224; --bad:#ff8a66; --bad-soft:#3d1d14; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.25}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.muted{color:var(--muted)}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 14px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:13px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--sunk);border:1px solid var(--line);color:var(--muted)}
+.pill.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.warn{background:var(--flag-soft);color:var(--flag);border-color:transparent}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.pill.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+
+/* ---------- Home ---------- */
+.home{padding-block:28px 48px;display:grid;gap:28px}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:28px;font-weight:700;letter-spacing:-.01em}
+.brand .code{font-family:var(--font-ui);font-weight:500;font-size:13px;color:var(--accent);border:1px solid var(--accent);padding:1px 7px;border-radius:4px}
+.lead{max-width:62ch;color:var(--muted);margin:6px 0 0}
+.homegrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.homegrid{grid-template-columns:1fr}}
+.drop{border:2px dashed var(--line);border-radius:12px;background:var(--surface);padding:32px 24px;display:grid;gap:14px;justify-items:center;text-align:center;transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop .big{font-size:19px;font-weight:600}
+.drop .formats{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.drop .formats span{font-family:var(--font-num);font-size:12px;padding:2px 7px;border-radius:4px;background:var(--sunk);border:1px solid var(--line)}
+.paste{width:100%;display:grid;gap:8px;text-align:left}
+.paste textarea{width:100%;min-height:90px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--sunk);padding:10px;font-size:13px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px}
+.panel h2{font-size:16px}
+.status{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none;background:var(--muted)}
+.dot.on{background:var(--ok)} .dot.off{background:var(--flag)}
+.libitem{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.libitem:first-of-type{border-top:0}
+.libitem .t{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.libitem .acts{display:flex;gap:6px;flex:none}
+.steps{display:grid;gap:8px;margin:0;padding:0;list-style:none;counter-reset:s}
+.steps li{display:grid;grid-template-columns:24px 1fr;gap:8px;font-size:14px;color:var(--muted)}
+.steps li::before{counter-increment:s;content:counter(s);font-family:var(--font-num);font-size:12px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink)}
+
+/* progress overlay */
+.overlay{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(3px);display:grid;place-items:center;z-index:50;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.dialog{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:520px;width:100%;display:grid;gap:14px;box-shadow:0 20px 50px -20px rgba(0,0,0,.35)}
+.dialog h2{font-size:18px}
+.prog{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.prog li{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--muted)}
+.prog li.now{color:var(--ink);font-weight:500}
+.prog li.done{color:var(--ok)}
+.prog li i{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:none}
+.prog li.now i{border-color:var(--accent);border-top-color:transparent;animation:spin .8s linear infinite}
+.prog li.done i{background:var(--ok);border-color:var(--ok)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.prog li.now i{animation:none}}
+.err{background:var(--bad-soft);color:var(--bad);border-radius:6px;padding:10px 12px;font-size:14px}
+.note{background:var(--flag-soft);color:var(--flag);border-radius:6px;padding:10px 12px;font-size:14px}
+
+/* ready screen */
+.ready{padding-block:28px 48px;display:grid;gap:20px}
+.secgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.seccard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:6px;cursor:pointer}
+.seccard.off{opacity:.5}
+.seccard .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.seccard h3{font-size:16px}
+.seccard .n{font-family:var(--font-num);font-size:13px;color:var(--muted)}
+.opts{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:7px 12px;font-size:14px}
+.seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
+
+/* ---------- Exam shell ---------- */
+.exam{display:grid;grid-template-rows:auto 1fr auto;height:100%}
+.bar{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.bar .wrap{max-width:none;display:flex;align-items:center;gap:14px;padding-block:8px;flex-wrap:wrap}
+.bar .ttl{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 160px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 10px;font-size:14px;font-weight:500;color:var(--muted)}
+.tab.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.tab.locked{text-decoration:line-through}
+.clock{font-family:var(--font-num);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;padding:4px 10px;border-radius:6px;background:var(--sunk);border:1px solid var(--line)}
+.clock.low{background:var(--flag-soft);color:var(--flag);border-color:transparent}
+.work{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.work.single{grid-template-columns:minmax(0,1fr)}
+.pane{min-height:0;overflow:auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.pane.src{background:var(--surface);border-right:1px solid var(--line)}
+.pane .inner{max-width:720px;margin:0 auto;display:grid;gap:18px}
+@media (max-width:820px){.work{grid-template-columns:minmax(0,1fr);overflow:auto}.pane{overflow:visible}.pane.src{border-right:0;border-bottom:1px solid var(--line)}}
+.partbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.passage{font-family:var(--font-read);font-size:17px;line-height:1.7;max-width:68ch}
+.passage p{margin:0 0 .9em}
+.passage h3{font-family:var(--font-ui);font-size:18px;margin-bottom:.6em}
+.audio{display:grid;gap:10px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:14px}
+.audio audio{width:100%}
+.audio .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.group{display:grid;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.group:last-child{border-bottom:0}
+.instr{font-weight:600;white-space:pre-wrap}
+.optlist{display:grid;gap:4px;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px}
+.optlist b{font-family:var(--font-num);margin-right:6px}
+.q{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;align-items:start;scroll-margin-top:80px}
+.qn{font-family:var(--font-num);font-weight:600;font-size:14px;height:28px;min-width:32px;border-radius:6px;border:1px solid var(--line);display:grid;place-items:center;background:var(--surface);cursor:pointer}
+.q.flagged .qn{background:var(--flag-soft);border-color:var(--flag);color:var(--flag)}
+.q .body{display:grid;gap:8px;min-width:0}
+.q .txt{white-space:pre-wrap}
+.choice{display:flex;gap:10px;align-items:flex-start;padding:6px 8px;border-radius:6px;border:1px solid transparent}
+.choice:hover{background:var(--sunk)}
+.choice input{margin-top:4px;accent-color:var(--accent)}
+.choice b{font-family:var(--font-num)}
+.inp{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:5px 8px;min-width:0}
+.inp:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+select.inp{max-width:100%}
+.tpl{white-space:pre-wrap;line-height:2.1;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px}
+.tpl .gap{display:inline-flex;align-items:center;gap:4px;scroll-margin-top:80px}
+.tpl .gap small{font-family:var(--font-num);font-weight:600;font-size:12px;color:var(--accent)}
+.tpl .gap input{width:150px}
+.tpl .gap.flagged small{color:var(--flag)}
+.flagbtn{border:0;background:transparent;color:var(--muted);font-size:12px;padding:0;justify-self:start}
+.q.flagged .flagbtn{color:var(--flag);font-weight:600}
+
+.rail{background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.rail .wrap{max-width:none;display:flex;gap:10px;align-items:center;padding-block:8px}
+.nums{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0;padding-bottom:2px}
+.nums button{font-family:var(--font-num);font-size:12px;min-width:30px;height:28px;border-radius:5px;border:1px solid var(--line);background:var(--surface);flex:none}
+.nums button.ans{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.nums button.flag{box-shadow:inset 0 -3px 0 var(--flag)}
+.nums .sep{width:1px;background:var(--line);margin:0 4px;flex:none}
+
+/* writing / speaking */
+.prompt{font-family:var(--font-read);font-size:17px;line-height:1.65;white-space:pre-wrap}
+.visual{border:1px dashed var(--line);border-radius:8px;padding:12px;font-size:14px;color:var(--muted);white-space:pre-wrap}
+.essay{width:100%;min-height:55vh;resize:vertical;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:14px;font-family:var(--font-read);font-size:16px;line-height:1.6}
+.wc{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.wc b{font-family:var(--font-num)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:10px}
+.cue ul{margin:4px 0 0;padding-left:20px}
+.spk textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:6px;background:var(--sunk);padding:10px}
+.mic.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.partial{font-style:italic;color:var(--muted);font-size:14px}
+
+/* ---------- Results ---------- */
+.results{padding-block:28px 60px;display:grid;gap:22px}
+.bands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:820px){.bands{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.band{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:2px}
+.band .v{font-family:var(--font-num);font-size:34px;font-weight:600;line-height:1.1}
+.band.overall{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.band.overall .label{color:inherit;opacity:.85}
+.band small{font-size:13px;color:var(--muted)}
+.band.overall small{color:inherit;opacity:.85}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--sunk)}
+td.n{font-family:var(--font-num);font-variant-numeric:tabular-nums;width:48px}
+tr.right td.mark{color:var(--ok);font-weight:700}
+tr.wrong td.mark{color:var(--bad);font-weight:700}
+.crit{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:600px){.crit{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.crit div{background:var(--sunk);border-radius:8px;padding:10px;display:grid}
+.crit b{font-family:var(--font-num);font-size:22px}
+.fb{white-space:pre-wrap;font-size:14px}
+.fb ul{margin:4px 0;padding-left:20px}
+details summary{cursor:pointer;font-weight:600}
+.transcript{white-space:pre-wrap;font-family:var(--font-read);font-size:15px;background:var(--sunk);border-radius:8px;padding:12px;margin-top:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:60;max-width:calc(100% - 32px)}
+</style>
+
+<div id="app"></div>
+<div id="layer"></div>
+
+<script>
+/* =================== utilities =================== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch {} }
+};
+const SKILL = {
+  listening: { name: "Listening", min: 30 },
+  reading:   { name: "Reading",   min: 60 },
+  writing:   { name: "Writing",   min: 60 },
+  speaking:  { name: "Speaking",  min: 14 }
+};
+const ORDER = ["listening", "reading", "writing", "speaking"];
+const KINDS = ["mcq", "multi", "tfng", "ynng", "matching", "gap", "short"];
+const fmt = s => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`; };
+const words = t => (String(t).trim().match(/[A-Za-zÀ-ỹ0-9'’-]+/g) || []).length;
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.append(t); setTimeout(() => t.remove(), 3200); }
+
+/* =================== capabilities =================== */
+/* ---- outside claude.ai: Claude API with the viewer's own key, plus browser speech ---- */
+const KEY_STORE = "bandup.apikey";
+function apiKey() { try { return localStorage.getItem(KEY_STORE) || ""; } catch { return ""; } }
+const blobB64 = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(b); });
+function makeApiSample() {
+  async function call(input, opts = {}) {
+    const content = [];
+    const imgs = opts.images ? (opts.images instanceof Blob ? [opts.images] : Array.from(opts.images)) : [];
+    for (const b of imgs) content.push({ type: "image", source: { type: "base64", media_type: b.type || "image/jpeg", data: await blobB64(b) } });
+    content.push({ type: "text", text: typeof input === "string" ? input : input.map(m => m.content).join("\n\n") });
+    let res;
+    try {
+      res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", signal: opts.signal,
+        headers: { "content-type": "application/json", "x-api-key": apiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true", "anthropic-beta": "server-side-fallback-2026-07-01" },
+        body: JSON.stringify({ model: "claude-opus-5-5", max_tokens: 32000, stream: true, fallbacks: "default", output_config: { effort: opts.effort || "medium" }, messages: [{ role: "user", content }] })
+      });
+    } catch (e) { throw { code: e?.name === "AbortError" ? "cancelled" : "upstream_error", message: String(e?.message || e) }; }
+    if (!res.ok) {
+      let j = null; try { j = await res.json(); } catch {}
+      const code = res.status === 401 || res.status === 403 ? "bad_key" : res.status === 429 ? "rate_limited" : res.status === 413 ? "prompt_too_large" : res.status === 400 ? "invalid_request" : "upstream_error";
+      throw { code, message: j?.error?.message || res.statusText };
+    }
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = "", text = "", stop = null;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read(); if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+          if (!line.startsWith("data:")) continue;
+          let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
+          if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") { text += ev.delta.text; opts.onText?.({ text, delta: ev.delta.text }); }
+          else if (ev.type === "message_delta" && ev.delta?.stop_reason) stop = ev.delta.stop_reason;
+          else if (ev.type === "error") throw { code: ev.error?.type === "overloaded_error" ? "upstream_error" : "upstream_error", message: ev.error?.message || "stream error", text };
+        }
+      }
+    } catch (e) { if (e?.name === "AbortError") throw { code: "cancelled", text }; throw e.code ? e : { code: "upstream_error", message: String(e), text }; }
+    if (stop === "refusal") throw { code: "refused", message: "refused" };
+    if (!text.trim()) throw { code: "empty_completion", message: "empty" };
+    return { text, truncated: stop === "max_tokens" };
+  }
+  const sample = (input, opts) => call(input, opts);
+  sample.json = async (input, opts) => {
+    const { text, truncated } = await call(input + "\n\nReply with only the JSON value, no other text.", opts);
+    const tryP = t => { try { return JSON.parse(t); } catch { return undefined; } };
+    let v = tryP(text.trim());
+    if (v === undefined) { const m = text.match(/```(?:json)?\s*([\s\S]*?)```/); if (m) v = tryP(m[1]); }
+    if (v === undefined) { const a = text.search(/[\[{]/), b = Math.max(text.lastIndexOf("}"), text.lastIndexOf("]")); if (a >= 0 && b > a) v = tryP(text.slice(a, b + 1)); }
+    if (v === undefined || truncated) throw { code: "invalid_json", message: truncated ? "truncated" : "no json", text };
+    return v;
+  };
+  sample.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 20, maxInputBytes: 5e6, mediaTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"] } });
+  return sample;
+}
+function browserTts() {
+  if (!("speechSynthesis" in window)) return null;
+  const hs = []; let active = false;
+  const emit = (state, reason) => hs.forEach(h => h({ state, reason }));
+  return {
+    onState(h) { hs.push(h); return () => {}; },
+    stop() { speechSynthesis.cancel(); active = false; emit("idle", "viewer_stopped"); return Promise.resolve(); },
+    speak(lines) {
+      speechSynthesis.cancel();
+      const list = typeof lines === "string" ? [{ text: lines }] : lines;
+      const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+      const pick = {}; let k = 0;
+      active = true; emit("speaking");
+      return new Promise(res => {
+        list.forEach((l, i) => {
+          const u = new SpeechSynthesisUtterance(l.text); u.lang = "en-GB"; u.rate = 0.95;
+          if (vs.length) { if (!(l.voice in pick)) pick[l.voice] = vs[k++ % vs.length]; u.voice = pick[l.voice]; }
+          if (i === list.length - 1) u.onend = () => { if (active) { active = false; emit("idle", "completed"); } res(); };
+          speechSynthesis.speak(u);
+        });
+      });
+    }
+  };
+}
+function browserDictation() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return null;
+  const H = { p: [], f: [], s: [] }; let rec = null;
+  return {
+    onPartial(h) { H.p.push(h); return () => {}; }, onFinal(h) { H.f.push(h); return () => {}; }, onState(h) { H.s.push(h); return () => {}; },
+    start() {
+      rec = new SR(); rec.lang = "en-US"; rec.continuous = true; rec.interimResults = true;
+      rec.onresult = e => { let interim = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) H.f.forEach(h => h({ text: r[0].transcript.trim() })); else interim += r[0].transcript; } H.p.forEach(h => h({ text: interim })); };
+      rec.onend = () => H.s.forEach(h => h({ state: "idle", reason: "stopped" }));
+      return new Promise((res, rej) => { rec.onstart = () => { H.s.forEach(h => h({ state: "listening" })); res(); }; rec.onerror = e => rej({ code: e.error === "not-allowed" ? "not_granted" : e.error }); rec.start(); });
+    },
+    stop() { rec?.stop(); return Promise.resolve(); }
+  };
+}
+function browserDownloads() {
+  if (window.claude?.use) return null; // inside claude.ai plain links are blocked
+  return { async save({ filename, data }) { const u = URL.createObjectURL(data instanceof Blob ? data : new Blob([data])); const a = document.createElement("a"); a.href = u; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(u), 4000); } };
+}
+
+const cap = { sample: null, tts: null, dictation: null, downloads: null, ready: false };
+async function initCaps() {
+  let s = null, t = null, d = null, dl = null;
+  if (window.claude?.use) {
+    const get = n => window.claude.use(n).catch(() => null);
+    [s, t, d, dl] = await Promise.all([get("sample"), get("tts"), get("dictation"), get("downloads")]);
+  }
+  cap.viaApi = false;
+  if (!s && apiKey()) { s = makeApiSample(); cap.viaApi = true; }
+  Object.assign(cap, { sample: s, tts: t || browserTts(), dictation: d || browserDictation(), downloads: dl || browserDownloads(), ready: true });
+  t = cap.tts; d = cap.dictation;
+  if (t) t.onState(({ state }) => { S.ttsState = state; const b = $("#ttsBtn"); if (b) b.textContent = state === "idle" ? "▶ Phát bằng giọng đọc" : "■ Dừng"; });
+  if (d) {
+    d.onPartial(({ text }) => { const p = $("#partial"); if (p) p.textContent = text; });
+    d.onFinal(({ text }) => {
+      const id = S.micTarget; if (!id) return;
+      S.speaking[id] = ((S.speaking[id] || "") + " " + text).trim();
+      const ta = document.querySelector(`textarea[data-spk="${id}"]`); if (ta) ta.value = S.speaking[id];
+      const p = $("#partial"); if (p) p.textContent = ""; save();
+    });
+    d.onState(({ state }) => { S.micOn = state === "listening"; document.querySelectorAll(".mic").forEach(b => { const on = S.micOn && b.dataset.mic === S.micTarget; b.classList.toggle("on", on); b.textContent = on ? "■ Dừng ghi" : "🎙 Nói để ghi"; }); });
+  }
+  render();
+}
+
+/* =================== sample test (original content) =================== */
+const SAMPLE = {
+  title: "Đề mẫu — Mini Test (4 kỹ năng)",
+  module: "academic",
+  answerSource: "key",
+  sections: [
+    { skill: "listening", minutes: 10, parts: [{
+      title: "Part 1",
+      passage: "RECEPTIONIST: Good morning, Riverside Community Sports Centre. How can I help?\nCALLER: Hi, I'd like to join one of your evening swimming classes.\nRECEPTIONIST: Of course. Can I take your name first?\nCALLER: Yes, it's Daniel Hartley. That's H-A-R-T-L-E-Y.\nRECEPTIONIST: Thank you. And a contact number?\nCALLER: It's 0 7 7 4 1, 3 9 6 2 0 5.\nRECEPTIONIST: Lovely. Now, we have beginner classes on Mondays and an improvers' class on Thursdays.\nCALLER: I can already swim a bit, so Thursday, please.\nRECEPTIONIST: The improvers' class starts at a quarter past seven and lasts forty-five minutes.\nCALLER: Great. How much is it?\nRECEPTIONIST: A ten-week course is sixty-five pounds, but members get it for fifty-two.\nCALLER: I'm not a member yet. What else do I need?\nRECEPTIONIST: Just bring a towel and goggles. Caps are provided free of charge. Oh, and please arrive ten minutes early for your first session so the instructor can check your level.\nCALLER: Where do I go when I arrive?\nRECEPTIONIST: Go to the main entrance on Mill Lane, not the car park entrance, which is locked after six.",
+      groups: [
+        { instructions: "Questions 1–5\nComplete the form below. Write ONE WORD AND/OR A NUMBER for each answer.", kind: "gap",
+          template: "SWIMMING CLASS BOOKING\n\nName: Daniel {{1}}\nPhone: 07741 {{2}}\nClass level: {{3}}\nDay: Thursday   Start time: {{4}}\nCourse price (non-member): £{{5}}",
+          questions: [
+            { n: 1, answer: ["Hartley"] }, { n: 2, answer: ["396205"] }, { n: 3, answer: ["improvers", "improver"] },
+            { n: 4, answer: ["7.15", "7:15", "7.15 pm", "7:15 pm", "quarter past seven"] }, { n: 5, answer: ["65", "65.00"] } ] },
+        { instructions: "Questions 6–7\nChoose the correct letter, A, B or C.", kind: "mcq", questions: [
+          { n: 6, text: "What does the caller NOT need to bring?", options: [{ key: "A", text: "a towel" }, { key: "B", text: "goggles" }, { key: "C", text: "a swimming cap" }], answer: ["C"] },
+          { n: 7, text: "On the first evening the caller should", options: [{ key: "A", text: "use the car park entrance." }, { key: "B", text: "arrive ten minutes early." }, { key: "C", text: "pay at the reception desk." }], answer: ["B"] } ] }
+      ] }] },
+    { skill: "reading", minutes: 20, parts: [{
+      title: "Passage 1",
+      passage: "Farming Upwards\n\nA  In the past decade, a growing number of cities have experimented with vertical farms: indoor facilities in which crops are grown in stacked layers under artificial light. Supporters argue that such farms could shorten supply chains, since lettuce harvested in a converted warehouse can reach a supermarket shelf within hours rather than days.\n\nB  The technology itself is not new. Hydroponics, the practice of growing plants in nutrient-rich water instead of soil, was described by researchers in the 1930s. What has changed is the cost of lighting. Light-emitting diodes now use far less electricity than the lamps of twenty years ago, and they can be tuned to the precise wavelengths that plants absorb most efficiently.\n\nC  Even so, energy remains the industry's greatest challenge. Sunlight is free; electric light is not. Several high-profile companies have closed after failing to cover their power bills, and critics point out that a field of wheat could never be grown economically indoors. For now, the most profitable crops are leafy greens and herbs, which grow quickly and are sold at a premium.\n\nD  Water use tells a more positive story. Because the water in a closed hydroponic system is recirculated, some operators report using up to ninety per cent less than conventional farms. Pesticides are also largely unnecessary, as insects have few ways into a sealed building.\n\nE  Whether vertical farms will feed whole cities is doubtful. A more realistic role, many researchers believe, is as a supplement to traditional agriculture, supplying fresh produce in places where the climate or the shortage of land makes outdoor farming difficult.",
+      groups: [
+        { instructions: "Questions 1–4\nDo the following statements agree with the information given in the passage?\nWrite TRUE, FALSE or NOT GIVEN.", kind: "tfng", questions: [
+          { n: 1, text: "Hydroponic growing methods were first developed in the last ten years.", answer: ["FALSE"] },
+          { n: 2, text: "Modern LED lights can be adjusted to suit the needs of plants.", answer: ["TRUE"] },
+          { n: 3, text: "Vertical farms receive government subsidies in most countries.", answer: ["NOT GIVEN"] },
+          { n: 4, text: "Insects rarely cause problems in sealed indoor farms.", answer: ["TRUE"] } ] },
+        { instructions: "Questions 5–7\nWhich paragraph contains the following information?\nWrite the correct letter, A–E.", kind: "matching",
+          options: ["A", "B", "C", "D", "E"].map(k => ({ key: k, text: "Paragraph " + k })), questions: [
+          { n: 5, text: "the reason some vertical farming businesses failed", answer: ["C"] },
+          { n: 6, text: "a likely future purpose for vertical farms", answer: ["E"] },
+          { n: 7, text: "an advantage relating to the time taken to deliver food", answer: ["A"] } ] },
+        { instructions: "Questions 8–10\nComplete the summary below. Choose NO MORE THAN TWO WORDS from the passage for each answer.", kind: "gap",
+          template: "At present, the crops that earn vertical farms the most money are leafy greens and {{8}}. Because water is {{9}} in a closed system, some farms use far less of it than outdoor farms. Researchers think vertical farming may best serve as a {{10}} to traditional agriculture.",
+          questions: [{ n: 8, answer: ["herbs"] }, { n: 9, answer: ["recirculated"] }, { n: 10, answer: ["supplement"] }] },
+        { instructions: "Questions 11–12\nChoose TWO letters, A–E.\nWhich TWO benefits of vertical farming are mentioned in the passage?", kind: "multi", questions: [
+          { n: 11, text: "Choose TWO answers.", select: 2, options: [{ key: "A", text: "lower electricity costs than outdoor farms" }, { key: "B", text: "reduced water consumption" }, { key: "C", text: "suitability for growing grain" }, { key: "D", text: "little need for pesticides" }, { key: "E", text: "cheaper produce for consumers" }], answer: ["B", "D"] } ] }
+      ] }] },
+    { skill: "writing", minutes: 40, tasks: [
+      { n: 2, minWords: 250, minutes: 40, prompt: "Some people believe that cities should invest in indoor food production, such as vertical farms. Others think this money would be better spent supporting traditional farmers.\n\nDiscuss both views and give your own opinion.\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience." } ] },
+    { skill: "speaking", minutes: 8, prompts: [
+      { part: 1, text: "Do you enjoy cooking? Why or why not?" },
+      { part: 1, text: "What kind of food is popular where you live?" },
+      { part: 2, text: "Describe a place where you like to buy food.", bullets: ["where it is", "how often you go there", "what you usually buy", "and explain why you like this place"] },
+      { part: 3, text: "How have people's shopping habits for food changed in your country in recent years?" } ] }
+  ]
+};
+
+/* =================== state =================== */
+const S = {
+  view: "home", exam: null, examId: null, sel: {}, mode: "exam",
+  sec: 0, part: 0, task: 0, answers: {}, flags: {}, writing: {}, speaking: {},
+  timeLeft: {}, elapsed: {}, locked: {}, grades: {}, audio: {}, ttsState: "idle", micTarget: null, micOn: false
+};
+let LIB = store.get("ielts.lib", []);
+let audioURLs = {};
+
+function save() {
+  if (!S.exam || S.view === "home") return;
+  store.set("ielts.session", { examId: S.examId, exam: S.exam, view: S.view, sel: S.sel, mode: S.mode, sec: S.sec, part: S.part, task: S.task, answers: S.answers, flags: S.flags, writing: S.writing, speaking: S.speaking, timeLeft: S.timeLeft, elapsed: S.elapsed, locked: S.locked, grades: S.grades });
+}
+function addToLib(exam) {
+  const id = "e" + Date.now().toString(36);
+  LIB = [{ id, title: exam.title, savedAt: Date.now(), exam }, ...LIB.filter(x => x.title !== exam.title)].slice(0, 6);
+  if (!store.set("ielts.lib", LIB)) { LIB = LIB.slice(0, 2); store.set("ielts.lib", LIB); }
+  return id;
+}
+
+/* =================== normalisation =================== */
+function normOption(o, i) {
+  if (o && typeof o === "object") return { key: String(o.key ?? String.fromCharCode(65 + i)).trim(), text: String(o.text ?? "") };
+  const m = String(o).match(/^\s*\(?([A-Za-z]{1,4}|[ivxlc]+)[\.\)]\s+(.*)$/);
+  return m ? { key: m[1], text: m[2] } : { key: String.fromCharCode(65 + i), text: String(o) };
+}
+function passageFrom(p, lines) {
+  if (typeof p.passage === "string" && p.passage.trim()) return p.passage.trim();
+  const rs = Array.isArray(p.passageLines) ? p.passageLines : [];
+  if (!lines || !rs.length) return "";
+  const out = [];
+  for (const r of rs) {
+    const a = Math.max(1, parseInt(r?.[0])), b = Math.min(lines.length, parseInt(r?.[1] ?? r?.[0]));
+    if (a && b >= a) out.push(lines.slice(a - 1, b).join("\n"));
+  }
+  return out.join("\n\n").trim();
+}
+function normGroup(g) {
+  let kind = KINDS.includes(g.kind) ? g.kind : "short";
+  const options = Array.isArray(g.options) ? g.options.map(normOption) : [];
+  const questions = (Array.isArray(g.questions) ? g.questions : []).map(q => {
+    let ans = q.answer; if (ans == null) ans = []; if (!Array.isArray(ans)) ans = [ans];
+    return {
+      n: q.n, text: String(q.text ?? ""),
+      options: Array.isArray(q.options) ? q.options.map(normOption) : [],
+      answer: ans.map(a => String(a).trim()).filter(Boolean),
+      select: Math.max(1, parseInt(q.select) || (kind === "multi" ? Math.max(2, ans.length) : 1))
+    };
+  });
+  if (kind === "mcq" && questions.some(q => (q.select || 1) > 1)) kind = "multi";
+  return { instructions: String(g.instructions ?? ""), kind, options, template: g.template ? String(g.template) : "", questions };
+}
+function normalizeExam(raw, lines) {
+  const ex = { title: String(raw.title || "Đề IELTS").slice(0, 140), module: raw.module === "general" ? "general" : "academic", answerSource: ["key", "ai", "mixed", "none"].includes(raw.answerSource) ? raw.answerSource : "key", sections: [] };
+  const by = {};
+  for (const sec of (raw.sections || [])) {
+    const skill = String(sec.skill || "").toLowerCase();
+    if (!ORDER.includes(skill)) continue;
+    const s = by[skill] || (by[skill] = { skill, minutes: 0, count: 0, parts: [], tasks: [], prompts: [] });
+    s.count++; s.minutes = +sec.minutes || 0;
+    if (skill === "writing") s.tasks.push(...(sec.tasks || []).map((t, i) => ({ n: +t.n || i + 1, prompt: String(t.prompt || ""), minWords: +t.minWords || (+t.n === 1 ? 150 : 250), minutes: +t.minutes || (+t.n === 1 ? 20 : 40), visual: String(t.visualDescription || t.visual || "") })).filter(t => t.prompt));
+    else if (skill === "speaking") s.prompts.push(...(sec.prompts || []).map(p => ({ part: +p.part || 1, text: String(p.text || ""), bullets: Array.isArray(p.bullets) ? p.bullets.map(String) : [] })).filter(p => p.text));
+    else {
+      const parts = Array.isArray(sec.parts) && sec.parts.length ? sec.parts : [{ title: sec.title, passage: sec.passage, passageLines: sec.passageLines, groups: sec.groups }];
+      s.parts.push(...parts.map(p => ({ title: String(p.title || ""), passage: passageFrom(p, lines), groups: (p.groups || []).map(normGroup).filter(g => g.questions.length) })));
+    }
+  }
+  for (const skill of ORDER) {
+    const s = by[skill]; if (!s) continue;
+    if (s.count > 1 || !s.minutes) s.minutes = SKILL[skill].min;
+    if (skill === "writing" && !s.tasks.length) continue;
+    if (skill === "speaking" && !s.prompts.length) continue;
+    if ((skill === "reading" || skill === "listening")) {
+      s.parts = s.parts.filter(p => p.groups.length || p.passage);
+      if (!s.parts.some(p => p.groups.length)) continue;
+      let next = 1;
+      s.parts.forEach((p, pi) => {
+        if (!p.title) p.title = (skill === "reading" ? "Passage " : "Part ") + (pi + 1);
+        p.groups.forEach((g, gi) => g.questions.forEach((q, qi) => {
+          const n = parseInt(q.n); q.n = Number.isFinite(n) && n > 0 ? n : next;
+          next = q.n + (g.kind === "multi" ? q.select : 1);
+          q.id = `${skill}-${pi}-${gi}-${qi}`;
+          q.kind = g.kind;
+        }));
+      });
+    }
+    delete s.count;
+    ex.sections.push(s);
+  }
+  if (!ex.sections.length) throw new Error("Không tìm thấy phần thi nào có câu hỏi trong file này.");
+  return ex;
+}
+
+/* =================== file reading =================== */
+async function readFile(file, forceOcr) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".json")) return { kind: "json", text: await file.text() };
+  if (name.endsWith(".pdf") || file.type === "application/pdf") return readPdf(file, forceOcr);
+  if (name.endsWith(".docx")) {
+    if (!window.mammoth) throw new Error("Không tải được thư viện đọc Word. Hãy lưu file thành PDF hoặc TXT rồi thử lại.");
+    const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+    return { kind: "text", text: r.value };
+  }
+  if (file.type.startsWith("image/")) return { kind: "pages", pages: [{ n: 1, image: file }] };
+  if (name.endsWith(".doc")) throw new Error("File .doc (Word cũ) chưa hỗ trợ. Hãy mở trong Word và lưu lại dạng .docx hoặc .pdf.");
+  return { kind: "text", text: await file.text() };
+}
+async function readPdf(file, forceOcr) {
+  if (!window.pdfjsLib) throw new Error("Không tải được thư viện đọc PDF. Hãy tải lại trang và thử lại.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  let pdf;
+  try { pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise; }
+  catch (e) { throw new Error(/password/i.test(e?.name + e?.message) ? "PDF có mật khẩu. Hãy gỡ mật khẩu rồi tải lại." : "Không mở được file PDF này (" + (e?.message || e) + ")."); }
+  const pages = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    let text = "";
+    try { const tc = await page.getTextContent(); for (const it of tc.items) { text += it.str; text += it.hasEOL ? "\n" : (it.str.endsWith(" ") ? "" : " "); } } catch {}
+    const letters = (text.match(/[A-Za-z]/g) || []).length;
+    // a page is "scanned" when it has almost no real text layer, or the layer is mostly junk
+    const scanned = forceOcr || letters < 60 || letters / Math.max(1, text.replace(/\s/g, "").length) < 0.5;
+    pages.push({ n: i, page, text, scanned });
+  }
+  if (!pages.some(p => p.scanned)) return { kind: "text", text: pages.map(p => p.text).join("\n") };
+  return { kind: "pages", pages, total: pdf.numPages };
+}
+/* render one PDF page (or an image file) into 1–2 JPEG slices: top & bottom halves keep small print readable */
+async function pageImages(p, halves) {
+  let c;
+  if (p.page) {
+    const base = p.page.getViewport({ scale: 1 });
+    const vp = p.page.getViewport({ scale: Math.min(3, 1800 / base.width) });
+    c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    await p.page.render({ canvasContext: ctx, viewport: vp }).promise;
+  } else {
+    const bmp = await createImageBitmap(p.image);
+    const k = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+    c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  }
+  const toJpeg = cv => new Promise(r => cv.toBlob(r, "image/jpeg", 0.9));
+  if (!halves || c.height < c.width * 1.1) return [await toJpeg(c)];
+  const ov = Math.round(c.height * 0.04), h = Math.ceil(c.height / 2) + ov, out = [];
+  for (const y of [0, c.height - h]) {
+    const s = document.createElement("canvas"); s.width = c.width; s.height = h;
+    s.getContext("2d").drawImage(c, 0, y, c.width, h, 0, 0, c.width, h);
+    out.push(await toJpeg(s));
+  }
+  return out;
+}
+const OCR_PROMPT = halves => `This is ${halves ? "one page of an IELTS test, split into its TOP half (image 1) and BOTTOM half (image 2); the halves overlap slightly, so do not repeat the overlapping line" : "one page of an IELTS test"}.
+Transcribe ALL text on the page exactly as printed, in reading order. Rules:
+- Keep question numbers, option letters (A, B, C…), paragraph letters, roman numerals, headings and instructions such as "Write NO MORE THAN TWO WORDS".
+- Write blanks/gaps as "______" and keep any question number printed next to them.
+- Two-column layouts: transcribe the left column fully, then the right column.
+- Tables: one row per line, cells separated by " | ".
+- Charts, graphs, maps, diagrams (e.g. Writing Task 1): write [FIGURE: …] with a full description including the title, axis labels, categories and every value you can read.
+- Ignore page numbers, watermarks, publisher footers and handwriting.
+- If the page is blank or contains nothing readable, output exactly: [BLANK]
+Output only the transcription, no comments.`;
+async function ocrPages(pages, signal) {
+  const lim = await cap.sample.limits().catch(() => null);
+  if (!lim?.images) throw Object.assign(new Error("Chế độ xem này không gửi được ảnh cho Claude, nên chưa quét được PDF scan. Hãy mở trang trên claude.ai (trình duyệt hoặc ứng dụng máy tính), hoặc chuyển PDF sang dạng có chữ (OCR) rồi tải lại."), { code: "no_images" });
+  const halves = lim.images.maxCount >= 2;
+  const todo = pages.filter(p => p.scanned), info = $("#streamInfo");
+  let done = 0, failed = [];
+  const paint = () => { if (info) info.textContent = `Đã quét ${done}/${todo.length} trang scan…`; };
+  paint();
+  let idx = 0;
+  const worker = async () => {
+    while (idx < todo.length) {
+      const p = todo[idx++];
+      if (signal.aborted) return;
+      try {
+        const imgs = await pageImages(p, halves);
+        const { text } = await cap.sample(OCR_PROMPT(imgs.length > 1), { images: imgs, modelTier: "default", effort: "low", signal, cache: { gcTime: 86400000 } });
+        p.text = /^\s*\[BLANK\]\s*$/.test(text) ? "" : text;
+      } catch (e) {
+        if (["cancelled", "not_granted", "rate_limited", "sampling_disabled", "session_expired", "images_unavailable"].includes(e?.code)) throw e;
+        failed.push(p.n); p.text = p.text || "";
+      }
+      done++; paint();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  if (failed.length) progressNote(`Không đọc được ${failed.length} trang (trang ${failed.sort((a, b) => a - b).join(", ")}). Các trang còn lại vẫn được dùng.`);
+  if (failed.length === todo.length) throw new Error("Không quét được trang nào. Hãy thử ảnh chụp rõ hơn hoặc PDF có chất lượng cao hơn.");
+  return pages.map(p => `\n=== Page ${p.n} ===\n${p.text}`).join("\n");
+}
+
+/* =================== Claude parsing =================== */
+const SCHEMA = `{
+  "title": string,                       // test name, e.g. "Cambridge 18 Test 2" or a short description
+  "module": "academic" | "general",
+  "answerSource": "key" | "ai" | "mixed",   // "key" if the document contains an answer key you used for every question
+  "sections": [ {
+    "skill": "listening" | "reading" | "writing" | "speaking",
+    "minutes": number,                   // official timing if not stated: L 30, R 60, W 60, S 14
+    "parts": [ {                          // listening: Part 1-4; reading: Passage 1-3
+      "title": string,
+      PASSAGE_FIELD
+      "groups": [ {
+        "instructions": string,          // copy the instruction block, e.g. "Questions 1-5\\nComplete the notes below. Write ONE WORD ONLY..."
+        "kind": "mcq" | "multi" | "tfng" | "ynng" | "matching" | "gap" | "short",
+        "options": [ {"key": string, "text": string} ],   // ONLY for matching: the shared list (headings i-x, people A-F, endings A-G, paragraphs A-F). [] otherwise
+        "template": string | null,       // for note/form/table/summary/flow-chart/sentence completion: copy the text with each blank replaced by {{n}} (n = question number). Otherwise null
+        "questions": [ {
+          "n": number,                   // question number as printed
+          "text": string,                // the question/statement (may be "" when the template holds it)
+          "options": [ {"key": "A", "text": "..."} ],      // for mcq / multi only
+          "select": number,              // multi only: how many letters to choose (a "Choose TWO" pair like Q21-22 is ONE question with select 2 and n = 21)
+          "answer": [string]             // accepted answers. Gap: every acceptable variant (e.g. ["7.15","7:15"]). mcq/matching: the key. tfng: "TRUE"/"FALSE"/"NOT GIVEN". ynng: "YES"/"NO"/"NOT GIVEN". multi: all correct keys
+        } ]
+      } ]
+    } ],
+    "tasks": [ {"n": 1 | 2, "prompt": string, "minWords": number, "minutes": number, "visualDescription": string | null} ],  // writing only. For Task 1 describe the chart/diagram data in visualDescription in detail (values, labels, trends)
+    "prompts": [ {"part": 1 | 2 | 3, "text": string, "bullets": [string]} ]   // speaking only; bullets = cue-card points
+  } ]
+}`;
+function parsePrompt(numbered, isImages) {
+  const pf = isImages
+    ? `"passage": string,                  // reading: full passage text exactly as printed, paragraphs separated by blank lines, keep paragraph letters. listening: the audio transcript/tapescript if printed, else ""`
+    : `"passageLines": [[from, to]],       // reading: the line range(s) of the passage text in the numbered document (inclusive). DO NOT copy the passage text. listening: line ranges of the tapescript/transcript if printed, else []`;
+  return `You are converting an IELTS practice test into structured JSON for a computer-based mock exam app.
+${isImages ? "The test is in the attached page images." : "The test document follows. Each line starts with its line number like \"L12| \"."}
+
+Return ONLY one JSON object with this shape (comments explain fields; do not output comments):
+${SCHEMA.replace("PASSAGE_FIELD", pf)}
+
+Rules:
+- Include only skills that actually appear. Keep question numbers exactly as printed.
+- Do not invent questions. Copy question text and options faithfully (fix obvious PDF line-break artifacts only).
+- Every question must have an "answer". Use the answer key in the document when present. If there is no key for a question, solve it yourself from the passage/transcript and set answerSource to "ai" or "mixed". If a listening question cannot be answered without audio and no transcript is printed, give your best guess.
+- Matching headings / features / sentence endings: kind "matching", put the shared list in group "options", each question's answer is the key.
+- Completion tasks (notes, form, table, summary, flow-chart, sentence completion): kind "gap" with a "template" containing {{n}} markers. If the gap text has no surrounding text, use "text" per question and template null.
+- Short-answer questions: kind "short".
+- Ignore cover pages, answer sheets, and marketing text.
+${isImages ? "" : "\nDOCUMENT:\n" + numbered}`;
+}
+
+let parseCtl = null;
+async function importFile(files, pastedText) {
+  files = files ? Array.from(files) : [];
+  const forceOcr = !!$("#ocrForce")?.checked;
+  const label = files.length > 1 ? `${files.length} ảnh` : files[0] ? files[0].name : "Văn bản đã dán";
+  showProgress(["Đọc file", "Quét trang scan (OCR)", "Claude phân tích cấu trúc đề", "Tạo bài thi"], 0, label);
+  parseCtl = new AbortController();
+  try {
+    let src;
+    if (!files.length) src = { kind: "text", text: pastedText };
+    else if (files.length > 1) {
+      const imgs = files.filter(f => f.type.startsWith("image/")).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      if (!imgs.length) throw new Error("Khi chọn nhiều file, hãy chọn các ảnh chụp trang đề (jpg, png).");
+      src = { kind: "pages", pages: imgs.map((f, i) => ({ n: i + 1, image: f, scanned: true })) };
+    } else src = await readFile(files[0], forceOcr);
+    if (src.kind === "pages") {
+      src.pages.forEach(p => { if (p.image) p.scanned = true; });
+      if (!cap.sample) throw new Error("File ảnh / PDF scan cần Claude để đọc, nhưng Claude không khả dụng ở chế độ xem này. Hãy mở trang trên claude.ai, hoặc dùng PDF có chữ, DOCX, TXT.");
+      setProgress(1);
+      src = { kind: "text", text: await ocrPages(src.pages, parseCtl.signal) };
+    }
+    let raw, lines = null;
+    if (src.kind === "json") {
+      raw = JSON.parse(src.text);
+      setProgress(3);
+    } else {
+      setProgress(2);
+      const text = src.text.replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+      lines = text.split("\n");
+      if (!cap.sample) {
+        raw = heuristicParse(text);
+        progressNote("Claude không khả dụng ở chế độ xem này — dùng bộ đọc đơn giản (chỉ nhận dạng trắc nghiệm A–D và đáp án dạng “1. B”).");
+      } else {
+        let numbered = lines.map((l, i) => `L${i + 1}| ${l}`).join("\n");
+        if (numbered.length > 200000) { numbered = numbered.slice(0, 200000); progressNote("Đề quá dài, chỉ phần đầu (~200.000 ký tự) được phân tích."); }
+        raw = await askJson(parsePrompt(numbered, false));
+      }
+      setProgress(3);
+    }
+    const exam = normalizeExam(raw, lines);
+    S.examId = addToLib(exam);
+    closeLayer();
+    openReady(exam);
+  } catch (e) {
+    if (e?.code === "cancelled") { closeLayer(); return; }
+    console.error(e);
+    progressError(errText(e));
+  }
+}
+async function askJson(prompt) {
+  const info = $("#streamInfo"); if (info) info.textContent = "Claude đang đọc đề (thường 30 giây – 2 phút)…";
+  return cap.sample.json(prompt, { signal: parseCtl.signal, modelTier: "default", onText: ({ text }) => { const el = $("#streamInfo"); if (el) el.textContent = `Đã nhận ${text.length.toLocaleString("vi-VN")} ký tự…`; } });
+}
+function errText(e) {
+  const m = {
+    not_granted: "Bạn chưa cho phép trang dùng Claude. Hãy mở lại trang và chọn Cho phép.",
+    rate_limited: "Đã đạt giới hạn sử dụng Claude. Đợi một lát rồi thử lại.",
+    prompt_too_large: "File quá lớn để phân tích một lần. Hãy tách đề thành từng kỹ năng (Reading, Listening…) rồi tải lần lượt.",
+    invalid_json: "Claude trả về kết quả không đọc được. Bấm thử lại; nếu vẫn lỗi, hãy tách đề nhỏ hơn.",
+    refused: "Claude từ chối xử lý nội dung này.",
+    sampling_disabled: "Claude không khả dụng cho tài khoản này.",
+    images_unavailable: "Chế độ xem này không gửi được ảnh cho Claude. Hãy mở trang trên claude.ai trong trình duyệt hoặc ứng dụng máy tính.",
+    image_rejected: "Ảnh không đọc được (sai định dạng hoặc quá lớn).",
+    session_expired: "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.",
+    bad_key: "Khoá API Claude không hợp lệ hoặc đã bị thu hồi. Hãy xoá khoá và nhập lại.",
+    invalid_request: "Yêu cầu gửi tới Claude bị từ chối.",
+    upstream_error: "Kết nối tới Claude bị gián đoạn. Thử lại."
+  };
+  if (e?.code && m[e.code]) return m[e.code] + (e.message && ["invalid_request", "upstream_error"].includes(e.code) ? " — " + e.message : "") + " (mã: " + e.code + ")";
+  if (e?.code && e.code !== "no_images") return "Lỗi: " + (e.message || "") + " (mã: " + e.code + ")";
+  return e?.message || String(e);
+}
+
+/* heuristic fallback (no Claude): passage + numbered MCQ / TFNG / gap with an answer key */
+function heuristicParse(text) {
+  const lines = text.split("\n");
+  let keyAt = lines.findIndex(l => /^\s*(answer key|answers|đáp án|key)\s*:?\s*$/i.test(l));
+  const key = {};
+  if (keyAt >= 0) for (const l of lines.slice(keyAt + 1)) { const m = l.match(/^\s*(\d{1,2})[\.\)\s:-]+\s*(.+?)\s*$/); if (m) key[+m[1]] = m[2]; }
+  const body = keyAt >= 0 ? lines.slice(0, keyAt) : lines;
+  const qs = []; let first = -1, cur = null;
+  body.forEach((l, i) => {
+    const q = l.match(/^\s*(?:Q(?:uestion)?\s*)?(\d{1,2})[\.\):]\s+(.+)$/i);
+    const o = l.match(/^\s*\(?([A-H])[\.\)]\s+(.+)$/);
+    if (q) { if (first < 0) first = i; cur = { n: +q[1], text: q[2], options: [] }; qs.push(cur); }
+    else if (o && cur) cur.options.push({ key: o[1], text: o[2] });
+    else if (cur && l.trim() && !cur.options.length) cur.text += " " + l.trim();
+  });
+  if (!qs.length) throw new Error("Không nhận dạng được câu hỏi. Bộ đọc đơn giản cần câu hỏi dạng “1. …” và lựa chọn “A. …”. Mở trang trong claude.ai để Claude đọc mọi định dạng.");
+  const groups = [];
+  for (const q of qs) {
+    const a = key[q.n] ? [key[q.n]] : [];
+    const kind = q.options.length ? "mcq" : /^(true|false|not given)$/i.test(a[0] || "") ? "tfng" : /^(yes|no)$/i.test(a[0] || "") ? "ynng" : "short";
+    let g = groups[groups.length - 1];
+    if (!g || g.kind !== kind) { g = { instructions: "", kind, questions: [] }; groups.push(g); }
+    g.questions.push({ ...q, answer: a });
+  }
+  return { title: (body.find(l => l.trim()) || "Đề tải lên").trim().slice(0, 80), answerSource: Object.keys(key).length ? "key" : "none",
+    sections: [{ skill: "reading", minutes: 60, parts: [{ title: "Passage 1", passage: body.slice(0, Math.max(first, 0)).join("\n"), groups }] }] };
+}
+
+/* =================== overlay =================== */
+function showProgress(steps, at, fname) {
+  $("#layer").innerHTML = `<div class="overlay"><div class="dialog" role="dialog" aria-live="polite">
+    <h2>Đang chuẩn bị đề thi</h2><div class="muted" style="font-size:14px;word-break:break-all">${esc(fname)}</div>
+    <ul class="prog">${steps.map((s, i) => `<li data-i="${i}"><i></i>${esc(s)}</li>`).join("")}</ul>
+    <div id="streamInfo" class="muted" style="font-size:13px;font-family:var(--font-num)"></div>
+    <div id="pnote"></div><div id="perr"></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-act="cancelParse">Huỷ</button></div></div></div>`;
+  setProgress(at);
+}
+function setProgress(i) { document.querySelectorAll(".prog li").forEach(li => { const k = +li.dataset.i; li.className = k < i ? "done" : k === i ? "now" : ""; }); }
+function progressNote(t) { const n = $("#pnote"); if (n) n.innerHTML += `<div class="note">${esc(t)}</div>`; }
+function progressError(t) {
+  document.querySelectorAll(".prog li.now").forEach(li => li.className = "");
+  const n = $("#perr"); if (n) n.innerHTML = `<div class="err">${esc(t)}</div>`;
+  const b = document.querySelector('[data-act="cancelParse"]'); if (b) b.textContent = "Đóng";
+}
+function closeLayer() { $("#layer").innerHTML = ""; }
+function confirmBox(title, body, okLabel, onOk) {
+  $("#layer").innerHTML = `<div class="overlay"><div class="dialog" role="dialog"><h2>${esc(title)}</h2><div>${body}</div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeLayer">Quay lại</button><button class="btn primary" id="okBtn">${esc(okLabel)}</button></div></div></div>`;
+  $("#okBtn").onclick = () => { closeLayer(); onOk(); };
+}
+
+/* =================== views =================== */
+function render() {
+  const app = $("#app");
+  if (S.view === "home") app.innerHTML = viewHome();
+  else if (S.view === "ready") app.innerHTML = viewReady();
+  else if (S.view === "exam") { app.innerHTML = viewExam(); afterExamRender(); }
+  else if (S.view === "results") app.innerHTML = viewResults();
+}
+
+function viewHome() {
+  const ses = store.get("ielts.session", null);
+  const aiState = !cap.ready ? `<span class="dot"></span><div>Đang kiểm tra kết nối Claude…</div>`
+    : cap.sample ? `<span class="dot on"></span><div><b>Claude sẵn sàng đọc đề.</b><br><span class="muted">Nhận mọi bố cục: PDF có chữ, PDF scan, ảnh chụp, Word, TXT.${cap.viaApi ? " Dùng khoá API của bạn." : " Lần đầu sẽ hỏi bạn cho phép."}</span></div>`
+    : `<span class="dot off"></span><div><b>Chưa kết nối Claude.</b><br><span class="muted">Hiện chỉ nhận file JSON và đề dạng văn bản đơn giản (câu “1. …”, lựa chọn “A. …”, mục “Answer key”). Nhập khoá API Claude bên dưới để đọc mọi loại đề và chấm Writing/Speaking.</span></div>`;
+  const keyBox = (!cap.ready || (cap.sample && !cap.viaApi)) ? "" : `<div class="panel"><h2>Khoá API Claude</h2>
+    ${cap.viaApi ? `<div class="status"><span class="dot on"></span><div>Đang dùng khoá <span style="font-family:var(--font-num)">…${esc(apiKey().slice(-4))}</span>, lưu trên trình duyệt này.</div></div><div><button class="btn sm" data-act="keyDel">Xoá khoá</button></div>`
+    : `<div class="muted" style="font-size:14px">Cần khi mở trang ngoài claude.ai. Lấy khoá ở console.anthropic.com → API Keys. Khoá chỉ lưu trên trình duyệt của bạn và chỉ gửi tới api.anthropic.com. Không nhập khoá trên máy dùng chung.</div>
+    <div class="row"><input id="keyIn" class="inp" type="password" autocomplete="off" placeholder="sk-ant-..." style="flex:1;min-width:0"><button class="btn primary sm" data-act="keySave">Lưu</button></div>`}</div>`;
+  return `<div class="wrap home">
+    <header><div class="brand"><h1>BandUp IELTS</h1><span class="code">phòng thi thử trên máy</span></div>
+      <p class="lead">Tải lên bất kỳ đề IELTS nào. Trang sẽ dựng lại thành bài thi trên máy như ngày thi thật: đồng hồ đếm ngược, bài đọc bên trái, câu hỏi bên phải, chấm điểm và quy đổi band ngay khi nộp.</p></header>
+    ${ses?.exam && ses.view !== "results" ? `<div class="panel" style="grid-template-columns:1fr auto;align-items:center"><div><div class="label">Bài đang làm dở</div><div style="font-weight:600">${esc(ses.exam.title)}</div></div><div class="row"><button class="btn sm ghost" data-act="dropSession">Bỏ</button><button class="btn primary sm" data-act="resume">Làm tiếp</button></div></div>` : ""}
+    <div class="homegrid">
+      <div class="drop" id="drop">
+        <div class="big">Kéo thả file đề vào đây</div>
+        <div class="formats"><span>.pdf</span><span>.docx</span><span>.txt</span><span>.jpg/.png</span><span>.json</span></div>
+        <div class="row" style="justify-content:center"><label class="btn primary" for="fileIn">Chọn file đề</label><input id="fileIn" type="file" hidden accept=".pdf,.docx,.txt,.md,.json,image/*" multiple><button class="btn" data-act="sample">Thử đề mẫu</button></div>
+        <label class="muted" style="font-size:13px;display:flex;gap:8px;align-items:center"><input type="checkbox" id="ocrForce"> PDF scan hoặc chữ copy ra bị lỗi: quét bằng hình ảnh</label>
+        <div class="muted" style="font-size:13px">Ảnh chụp nhiều trang: chọn tất cả ảnh cùng lúc, sắp theo tên file.</div>
+        <div class="paste">
+          <label class="label" for="pasteIn">Hoặc dán nội dung đề</label>
+          <textarea id="pasteIn" placeholder="Dán đoạn văn, câu hỏi và đáp án (nếu có)…"></textarea>
+          <div><button class="btn sm" data-act="pasteGo">Tạo bài thi từ văn bản</button></div>
+        </div>
+      </div>
+      <div style="display:grid;gap:16px">
+        <div class="panel"><h2>Trạng thái</h2><div class="status">${aiState}</div></div>${keyBox}
+        <div class="panel"><h2>Cách hoạt động</h2><ol class="steps">
+          <li>Tải đề lên (PDF scan và ảnh chụp được Claude quét từng trang). Có đáp án trong file thì dùng đáp án đó; không có thì Claude tự giải và đánh dấu “AI”.</li>
+          <li>Chọn kỹ năng muốn thi và chế độ tính giờ.</li>
+          <li>Làm bài. Listening: tải file audio, hoặc nghe giọng đọc từ transcript.</li>
+          <li>Nộp bài để xem band. Writing và Speaking được Claude chấm theo 4 tiêu chí.</li></ol></div>
+        ${LIB.length ? `<div class="panel"><h2>Đề đã tải</h2><div>${LIB.map(x => `<div class="libitem"><div style="min-width:0"><div class="t">${esc(x.title)}</div><div class="muted" style="font-size:12px">${new Date(x.savedAt).toLocaleDateString("vi-VN")} · ${x.exam.sections.map(s => SKILL[s.skill].name).join(", ")}</div></div><div class="acts"><button class="btn sm ghost" data-act="libDel" data-id="${x.id}" aria-label="Xoá">✕</button><button class="btn sm" data-act="libOpen" data-id="${x.id}">Mở</button></div></div>`).join("")}</div></div>` : ""}
+      </div>
+    </div></div>`;
+}
+
+function qCount(sec) { let n = 0; for (const p of sec.parts) for (const g of p.groups) for (const q of g.questions) n += g.kind === "multi" ? q.select : 1; return n; }
+function openReady(exam) {
+  S.exam = exam; S.view = "ready"; S.sel = {}; exam.sections.forEach(s => S.sel[s.skill] = true);
+  S.answers = {}; S.flags = {}; S.writing = {}; S.speaking = {}; S.timeLeft = {}; S.elapsed = {}; S.locked = {}; S.grades = {}; S.sec = 0; S.part = 0; S.task = 0;
+  render();
+}
+function viewReady() {
+  const ex = S.exam;
+  const src = { key: ["ok", "Đáp án lấy từ file đề"], ai: ["warn", "Không có đáp án trong file — Claude tự giải, nên kiểm tra lại"], mixed: ["warn", "Một phần đáp án do Claude tự giải"], none: ["bad", "Không có đáp án — chỉ làm bài, không chấm được"] }[ex.answerSource];
+  return `<div class="wrap ready">
+    <div class="row"><button class="btn sm ghost" data-act="home">← Trang chủ</button></div>
+    <div><div class="label">Đề đã sẵn sàng</div><h1 style="font-size:26px;margin-top:4px">${esc(ex.title)}</h1>
+      <div class="row" style="margin-top:8px"><span class="pill acc">${ex.module === "general" ? "General Training" : "Academic"}</span><span class="pill ${src[0]}">${src[1]}</span></div></div>
+    <div><div class="label" style="margin-bottom:8px">Chọn kỹ năng muốn thi</div>
+    <div class="secgrid">${ex.sections.map(s => {
+      const info = s.skill === "writing" ? `${s.tasks.length} task` : s.skill === "speaking" ? `${s.prompts.length} câu hỏi` : `${qCount(s)} câu · ${s.parts.length} phần`;
+      return `<label class="seccard ${S.sel[s.skill] ? "" : "off"}"><div class="top"><h3>${SKILL[s.skill].name}</h3><input type="checkbox" data-sel="${s.skill}" ${S.sel[s.skill] ? "checked" : ""}></div><div class="n">${info}</div><div class="n">${s.minutes} phút</div></label>`;
+    }).join("")}</div></div>
+    <div class="opts"><div><div class="label" style="margin-bottom:6px">Tính giờ</div>
+      <div class="seg" role="group"><button data-mode="exam" class="${S.mode === "exam" ? "on" : ""}">Như thi thật</button><button data-mode="practice" class="${S.mode === "practice" ? "on" : ""}">Luyện tập (không giới hạn)</button></div></div>
+      <div><div class="label" style="margin-bottom:6px">Loại đề</div>
+      <div class="seg" role="group"><button data-module="academic" class="${ex.module === "academic" ? "on" : ""}">Academic</button><button data-module="general" class="${ex.module === "general" ? "on" : ""}">General</button></div></div></div>
+    <div class="row">${cap.downloads ? `<button class="btn" data-act="saveJson">Lưu đề dạng JSON</button>` : ""}<button class="btn primary" data-act="start">Bắt đầu làm bài</button></div>
+    <p class="muted" style="font-size:13px;margin:0">Bài làm được lưu tự động trên trình duyệt này. Đóng trang rồi mở lại vẫn làm tiếp được.</p>
+  </div>`;
+}
+
+function activeSecs() { return S.exam.sections.filter(s => S.sel[s.skill]); }
+function curSec() { return activeSecs()[S.sec]; }
+
+function viewExam() {
+  const secs = activeSecs(), sec = curSec();
+  const tabs = secs.map((s, i) => `<button class="tab ${i === S.sec ? "on" : ""} ${S.locked[s.skill] ? "locked" : ""}" data-sec="${i}">${SKILL[s.skill].name}</button>`).join("");
+  let body = "";
+  if (sec.skill === "reading" || sec.skill === "listening") body = viewQA(sec);
+  else if (sec.skill === "writing") body = viewWriting(sec);
+  else body = viewSpeaking(sec);
+  return `<div class="exam">
+    <div class="bar"><div class="wrap"><div class="ttl">${esc(S.exam.title)}</div><div class="tabs">${tabs}</div>
+      <div class="clock" id="clock" title="Thời gian">--:--</div>
+      <button class="btn primary sm" data-act="submit">Nộp bài</button></div></div>
+    ${body}
+  </div>`;
+}
+
+function viewQA(sec) {
+  const part = sec.parts[S.part] || sec.parts[0];
+  const lock = S.locked[sec.skill] ? "disabled" : "";
+  const partbar = sec.parts.length > 1 ? `<div class="partbar">${sec.parts.map((p, i) => `<button class="tab ${i === S.part ? "on" : ""}" data-part="${i}">${esc(p.title)}</button>`).join("")}</div>` : "";
+  let left = "";
+  if (sec.skill === "reading") {
+    left = `<div class="pane src"><div class="inner">${partbar}<div class="passage">${passageHTML(part.passage)}</div></div></div>`;
+  }
+  const audio = sec.skill === "listening" ? audioBox(sec, part) : "";
+  const groups = part.groups.map((g, gi) => groupHTML(g, lock)).join("");
+  const right = `<div class="pane"><div class="inner">${sec.skill === "listening" ? partbar + audio : ""}${groups}</div></div>`;
+  const nums = sec.parts.map((p, pi) => p.groups.flatMap(g => g.questions.map(q => {
+    const v = S.answers[q.id]; const done = Array.isArray(v) ? v.length : (v ?? "").toString().trim();
+    const label = g.kind === "multi" && q.select > 1 ? `${q.n}–${q.n + q.select - 1}` : q.n;
+    return `<button class="${done ? "ans" : ""} ${S.flags[q.id] ? "flag" : ""}" data-goto="${q.id}" data-gp="${pi}">${label}</button>`;
+  })).join("")).join(`<span class="sep"></span>`);
+  return `<div class="work ${sec.skill === "listening" ? "single" : ""}">${left}${right}</div>
+    <div class="rail"><div class="wrap"><button class="btn sm ghost" data-act="prevPart" ${S.part === 0 ? "disabled" : ""} aria-label="Phần trước">←</button><div class="nums">${nums}</div><button class="btn sm ghost" data-act="nextPart" ${S.part >= sec.parts.length - 1 ? "disabled" : ""} aria-label="Phần sau">→</button></div></div>`;
+}
+function passageHTML(t) {
+  if (!t) return `<p class="muted">Không có bài đọc cho phần này.</p>`;
+  const paras = t.split(/\n\s*\n/);
+  return paras.map((p, i) => i === 0 && p.length < 90 && !/[.!?]$/.test(p.trim()) ? `<h3>${esc(p.trim())}</h3>` : `<p>${esc(p.trim()).replace(/\n/g, "<br>")}</p>`).join("");
+}
+function audioBox(sec, part) {
+  const key = S.part;
+  const url = audioURLs[key] || audioURLs.all;
+  const hasT = !!part.passage;
+  return `<div class="audio">
+    <div class="label">Âm thanh — ${esc(part.title)}</div>
+    ${url ? `<audio controls src="${url}"></audio>` : `<div class="muted" style="font-size:14px">Chưa có file audio cho phần này.</div>`}
+    <div class="row">
+      <label class="btn sm" for="audioIn">${url ? "Đổi file audio" : "Tải file audio (mp3, m4a…)"}</label><input id="audioIn" type="file" accept="audio/*" hidden>
+      ${hasT && cap.tts ? `<button class="btn sm" id="ttsBtn" data-act="tts">${S.ttsState === "idle" ? "▶ Phát bằng giọng đọc" : "■ Dừng"}</button>` : ""}
+    </div>
+    ${hasT && !cap.tts && !url ? `<div class="muted" style="font-size:13px">Đề có transcript nhưng giọng đọc không khả dụng ở đây. Transcript sẽ hiện sau khi nộp bài.</div>` : ""}
+    ${!hasT && !url ? `<div class="muted" style="font-size:13px">File đề không có transcript. Hãy tải file audio đi kèm đề để làm phần nghe.</div>` : ""}
+  </div>`;
+}
+function groupHTML(g, lock) {
+  const head = g.instructions ? `<div class="instr">${esc(g.instructions)}</div>` : "";
+  const optlist = g.kind === "matching" && g.options.length && g.options.some(o => o.text && o.text !== "Paragraph " + o.key)
+    ? `<div class="optlist">${g.options.map(o => `<div><b>${esc(o.key)}</b>${esc(o.text)}</div>`).join("")}</div>` : "";
+  if (g.template) {
+    const byN = {}; g.questions.forEach(q => byN[q.n] = q);
+    const parts = esc(g.template).split(/\{\{\s*(\d+)\s*\}\}/);
+    let html = "";
+    parts.forEach((p, i) => {
+      if (i % 2 === 0) { html += p; return; }
+      const q = byN[+p];
+      if (!q) { html += `(${p}) ______`; return; }
+      html += `<span class="gap ${S.flags[q.id] ? "flagged" : ""}" id="q-${q.id}"><small data-flag="${q.id}" title="Đánh dấu">${q.n}</small><input class="inp" data-q="${q.id}" value="${esc(S.answers[q.id] || "")}" ${lock} autocomplete="off" spellcheck="false" aria-label="Câu ${q.n}"></span>`;
+    });
+    const missing = g.questions.filter(q => !new RegExp(`\\{\\{\\s*${q.n}\\s*\\}\\}`).test(g.template));
+    return `<section class="group">${head}<div class="tpl">${html}</div>${missing.map(q => qHTML(g, q, lock)).join("")}</section>`;
+  }
+  return `<section class="group">${head}${optlist}${g.questions.map(q => qHTML(g, q, lock)).join("")}</section>`;
+}
+function qHTML(g, q, lock) {
+  const v = S.answers[q.id];
+  let ctl = "";
+  const k = g.kind;
+  if (k === "mcq") ctl = q.options.map(o => `<label class="choice"><input type="radio" name="r-${q.id}" data-q="${q.id}" value="${esc(o.key)}" ${v === o.key ? "checked" : ""} ${lock}><span><b>${esc(o.key)}</b>&nbsp; ${esc(o.text)}</span></label>`).join("");
+  else if (k === "multi") ctl = `<div class="muted" style="font-size:13px">Chọn ${q.select} đáp án</div>` + q.options.map(o => `<label class="choice"><input type="checkbox" data-qm="${q.id}" data-max="${q.select}" value="${esc(o.key)}" ${(v || []).includes(o.key) ? "checked" : ""} ${lock}><span><b>${esc(o.key)}</b>&nbsp; ${esc(o.text)}</span></label>`).join("");
+  else if (k === "tfng" || k === "ynng") {
+    const opts = k === "tfng" ? ["TRUE", "FALSE", "NOT GIVEN"] : ["YES", "NO", "NOT GIVEN"];
+    ctl = `<div class="row">${opts.map(o => `<label class="choice"><input type="radio" name="r-${q.id}" data-q="${q.id}" value="${o}" ${v === o ? "checked" : ""} ${lock}><span>${o}</span></label>`).join("")}</div>`;
+  } else if (k === "matching") {
+    const opts = (q.options.length ? q.options : g.options);
+    ctl = `<select class="inp" data-q="${q.id}" ${lock} aria-label="Câu ${q.n}"><option value="">— chọn —</option>${opts.map(o => `<option value="${esc(o.key)}" ${v === o.key ? "selected" : ""}>${esc(o.key)}${o.text && o.text !== "Paragraph " + o.key ? " — " + esc(o.text.length > 60 ? o.text.slice(0, 60) + "…" : o.text) : ""}</option>`).join("")}</select>`;
+  } else ctl = `<input class="inp" style="max-width:320px;width:100%" data-q="${q.id}" value="${esc(v || "")}" ${lock} autocomplete="off" spellcheck="false" aria-label="Câu ${q.n}">`;
+  const label = k === "multi" && q.select > 1 ? `${q.n}–${q.n + q.select - 1}` : q.n;
+  return `<div class="q ${S.flags[q.id] ? "flagged" : ""}" id="q-${q.id}"><div class="qn" data-flag="${q.id}" title="Bấm để đánh dấu xem lại">${label}</div><div class="body">${q.text ? `<div class="txt">${esc(q.text)}</div>` : ""}${ctl}<button class="flagbtn" data-flag="${q.id}">${S.flags[q.id] ? "⚑ Đã đánh dấu" : "⚐ Đánh dấu xem lại"}</button></div></div>`;
+}
+
+function viewWriting(sec) {
+  const t = sec.tasks[S.task] || sec.tasks[0];
+  const id = "w" + S.task, txt = S.writing[id] || "";
+  const lock = S.locked.writing ? "disabled" : "";
+  const tabs = sec.tasks.length > 1 ? `<div class="partbar">${sec.tasks.map((x, i) => `<button class="tab ${i === S.task ? "on" : ""}" data-task="${i}">Task ${x.n}</button>`).join("")}</div>` : "";
+  const wc = words(txt);
+  return `<div class="work">
+    <div class="pane src"><div class="inner">${tabs}<div class="label">Writing Task ${t.n} · khoảng ${t.minutes} phút</div>
+      <div class="prompt">${esc(t.prompt)}</div>
+      ${t.visual ? `<div class="visual"><b>Mô tả biểu đồ / hình:</b>\n${esc(t.visual)}</div>` : ""}
+      <div class="muted" style="font-size:14px">Viết ít nhất ${t.minWords} từ.</div></div></div>
+    <div class="pane"><div class="inner">
+      <textarea class="essay" id="essay" data-w="${id}" ${lock} spellcheck="false" placeholder="Bắt đầu viết bài tại đây…">${esc(txt)}</textarea>
+      <div class="wc"><span class="muted">Không có kiểm tra chính tả, giống như thi trên máy.</span><span>Số từ: <b id="wcount" style="color:${wc >= t.minWords ? "var(--ok)" : "var(--ink)"}">${wc}</b> / ${t.minWords}</span></div>
+    </div></div></div>
+    <div class="rail"><div class="wrap"><div class="nums">${sec.tasks.map((x, i) => `<button class="${words(S.writing["w" + i] || "") >= x.minWords ? "ans" : ""}" data-task="${i}">T${x.n}</button>`).join("")}</div></div></div>`;
+}
+function viewSpeaking(sec) {
+  const lock = S.locked.speaking ? "disabled" : "";
+  const parts = [1, 2, 3].map(p => ({ p, items: sec.prompts.map((x, i) => ({ ...x, i })).filter(x => x.part === p) })).filter(x => x.items.length);
+  return `<div class="work single"><div class="pane"><div class="inner">
+    <div class="note" style="background:var(--accent-soft);color:var(--ink)">Trả lời to thành tiếng. ${cap.dictation ? "Bấm <b>Nói để ghi</b> để chuyển lời nói thành chữ, hoặc gõ ý chính vào ô." : "Gõ lại câu trả lời của bạn vào ô."} Claude chấm Fluency, Lexical Resource, Grammar dựa trên nội dung ghi lại (không chấm được phát âm).</div>
+    <div id="partial" class="partial"></div>
+    ${parts.map(({ p, items }) => `<div class="label">Part ${p}${p === 2 ? " · 1 phút chuẩn bị, nói 1–2 phút" : ""}</div>` + items.map(x => {
+      const id = "s" + x.i;
+      return `<div class="card spk ${p === 2 ? "cue" : ""}"><div class="prompt" style="font-size:16px">${esc(x.text)}${x.bullets.length ? `<div style="font-family:var(--font-ui);font-size:14px;margin-top:6px">You should say:<ul>${x.bullets.map(b => `<li>${esc(b)}</li>`).join("")}</ul></div>` : ""}</div>
+        <textarea data-spk="${id}" ${lock} placeholder="Câu trả lời của bạn…">${esc(S.speaking[id] || "")}</textarea>
+        <div class="row">${cap.dictation ? `<button class="btn sm mic" data-mic="${id}" ${lock}>🎙 Nói để ghi</button>` : ""}${p === 2 ? `<button class="btn sm" data-act="prep" data-id="${id}">Bấm giờ 1:00 + 2:00</button><span class="clock" style="font-size:14px" id="prep-${id}">1:00</span>` : ""}</div></div>`;
+    }).join("")).join("")}
+  </div></div></div>`;
+}
+
+/* =================== timer =================== */
+let tick = null, last = 0;
+function startTimer() {
+  clearInterval(tick); last = Date.now();
+  tick = setInterval(() => {
+    if (S.view !== "exam") return;
+    const sec = curSec(); if (!sec) return;
+    const now = Date.now(), dt = (now - last) / 1000; last = now;
+    const k = sec.skill;
+    S.elapsed[k] = (S.elapsed[k] || 0) + dt;
+    if (S.mode === "exam" && !S.locked[k]) {
+      S.timeLeft[k] = Math.max(0, (S.timeLeft[k] ?? sec.minutes * 60) - dt);
+      if (S.timeLeft[k] <= 0) { S.locked[k] = true; save(); timeUp(); }
+    }
+    paintClock();
+    if (Math.round(S.elapsed[k]) % 5 === 0) save();
+  }, 500);
+}
+function paintClock() {
+  const c = $("#clock"), sec = curSec(); if (!c || !sec) return;
+  const k = sec.skill;
+  if (S.mode === "exam") { const t = S.timeLeft[k] ?? sec.minutes * 60; c.textContent = S.locked[k] ? "Hết giờ" : fmt(t); c.classList.toggle("low", t < 300); }
+  else { c.textContent = "⏱ " + fmt(S.elapsed[k] || 0); c.classList.remove("low"); }
+}
+function timeUp() {
+  const secs = activeSecs(), i = S.sec;
+  const nextOpen = secs.findIndex((s, j) => j > i && !S.locked[s.skill]);
+  confirmBox("Hết giờ phần " + SKILL[curSec().skill].name, `<p>Bài làm phần này đã được khoá và lưu lại.</p>`, nextOpen >= 0 ? "Sang phần " + SKILL[secs[nextOpen].skill].name : "Nộp bài và xem kết quả", () => {
+    if (nextOpen >= 0) { S.sec = nextOpen; S.part = 0; S.task = 0; render(); } else finish();
+  });
+  render();
+}
+let prepTimer = null;
+function runPrep(id) {
+  clearInterval(prepTimer); let t = 180;
+  const el = () => $("#prep-" + id);
+  prepTimer = setInterval(() => {
+    t--; const e = el(); if (!e) { clearInterval(prepTimer); return; }
+    if (t > 120) e.textContent = "Chuẩn bị " + fmt(t - 120); else e.textContent = "Nói " + fmt(t);
+    e.classList.toggle("low", t <= 120);
+    if (t <= 0) { clearInterval(prepTimer); e.textContent = "Hết giờ"; }
+  }, 1000);
+}
+
+function afterExamRender() {
+  paintClock();
+  const ta = $("#essay");
+  if (ta) ta.addEventListener("input", () => {
+    S.writing[ta.dataset.w] = ta.value;
+    const t = curSec().tasks[S.task], wc = words(ta.value), el = $("#wcount");
+    el.textContent = wc; el.style.color = wc >= t.minWords ? "var(--ok)" : "var(--ink)";
+    clearTimeout(ta._t); ta._t = setTimeout(save, 600);
+  });
+}
+
+/* =================== scoring =================== */
+const TABLES = {
+  listening: [[39, 9], [37, 8.5], [35, 8], [32, 7.5], [30, 7], [26, 6.5], [23, 6], [18, 5.5], [16, 5], [13, 4.5], [11, 4], [8, 3.5], [6, 3], [4, 2.5], [2, 2], [1, 1], [0, 0]],
+  academic: [[39, 9], [37, 8.5], [35, 8], [33, 7.5], [30, 7], [27, 6.5], [23, 6], [19, 5.5], [15, 5], [13, 4.5], [10, 4], [8, 3.5], [6, 3], [4, 2.5], [2, 2], [1, 1], [0, 0]],
+  general: [[40, 9], [39, 8.5], [37, 8], [36, 7.5], [34, 7], [32, 6.5], [30, 6], [27, 5.5], [23, 5], [19, 4.5], [15, 4], [12, 3.5], [9, 3], [6, 2.5], [3, 2], [1, 1], [0, 0]]
+};
+function band(skill, raw, total) {
+  const scaled = total === 40 ? raw : Math.round(raw / total * 40);
+  const tb = skill === "listening" ? TABLES.listening : TABLES[S.exam.module];
+  for (const [min, b] of tb) if (scaled >= min) return b;
+  return 0;
+}
+const norm = s => String(s ?? "").toLowerCase().normalize("NFKC").replace(/[’‘`]/g, "'").replace(/[“”"]/g, "").replace(/\s+/g, " ").replace(/^[\s.,;:!?]+|[\s.,;:!?]+$/g, "").trim();
+const TF = { t: "true", true: "true", f: "false", false: "false", ng: "not given", "not given": "not given", notgiven: "not given", y: "yes", yes: "yes", n: "no", no: "no" };
+function variants(ans) {
+  const out = new Set();
+  for (const a of ans) for (const piece of String(a).split(/\s+\/\s+|\s+OR\s+/)) {
+    out.add(norm(piece.replace(/[()]/g, "")));
+    out.add(norm(piece.replace(/\([^)]*\)/g, "")));
+  }
+  out.delete(""); return out;
+}
+function isRight(kind, user, answer) {
+  if (!answer.length) return null;
+  if (kind === "tfng" || kind === "ynng") { const u = TF[norm(user)]; return !!u && answer.some(a => TF[norm(a)] === u); }
+  if (kind === "mcq" || kind === "matching") return answer.some(a => norm(a) === norm(user));
+  const u = norm(user); if (!u) return false;
+  const vs = variants(answer);
+  return vs.has(u) || vs.has(u.replace(/^(the|a|an) /, ""));
+}
+function scoreSection(sec) {
+  let raw = 0, total = 0, unknown = 0; const rows = [];
+  sec.parts.forEach(p => p.groups.forEach(g => g.questions.forEach(q => {
+    const v = S.answers[q.id];
+    if (g.kind === "multi") {
+      const picked = (v || []).map(norm), keys = q.answer.map(norm);
+      total += q.select;
+      if (!keys.length) { unknown += q.select; rows.push({ q, user: (v || []).join(", "), ok: null }); return; }
+      const hit = picked.filter(x => keys.includes(x)).length;
+      raw += Math.min(hit, q.select);
+      rows.push({ q, user: (v || []).join(", "), ok: hit >= q.select ? true : hit ? "part" : false, hit });
+    } else {
+      total++;
+      const ok = isRight(g.kind, v ?? "", q.answer);
+      if (ok === null) unknown++; else if (ok) raw++;
+      rows.push({ q, user: v ?? "", ok });
+    }
+  })));
+  return { raw, total, unknown, rows, band: total - unknown > 0 ? band(sec.skill, raw, total - unknown) : null };
+}
+function overall(bs) {
+  if (bs.length < 4 || bs.some(b => b == null)) return null;
+  const avg = bs.reduce((a, b) => a + b, 0) / 4, f = avg - Math.floor(avg);
+  return Math.floor(avg) + (f < 0.25 ? 0 : f < 0.75 ? 0.5 : 1);
+}
+
+function finish() {
+  clearInterval(tick); S.view = "results";
+  if (cap.tts && S.ttsState !== "idle") cap.tts.stop().catch(() => {});
+  save(); render(); window.scrollTo(0, 0);
+}
+
+function viewResults() {
+  const secs = activeSecs();
+  const scored = {};
+  secs.forEach(s => { if (s.skill === "reading" || s.skill === "listening") scored[s.skill] = scoreSection(s); });
+  const bandOf = k => scored[k]?.band ?? S.grades[k]?.overall ?? null;
+  const allFour = ORDER.every(k => secs.some(s => s.skill === k));
+  const ov = allFour ? overall(ORDER.map(bandOf)) : null;
+  const tile = k => {
+    const s = secs.find(x => x.skill === k);
+    if (!s) return `<div class="band"><span class="label">${SKILL[k].name}</span><span class="v muted">—</span><small>Không thi</small></div>`;
+    const b = bandOf(k);
+    const sub = scored[k] ? `${scored[k].raw}/${scored[k].total - scored[k].unknown} câu đúng${scored[k].total !== 40 ? " · quy đổi" : ""}` : (b != null ? "Claude ước tính" : "Chưa chấm");
+    return `<div class="band"><span class="label">${SKILL[k].name}</span><span class="v">${b != null ? b.toFixed(1) : "–"}</span><small>${sub}</small></div>`;
+  };
+  return `<div class="wrap results">
+    <div class="row" style="justify-content:space-between"><button class="btn sm ghost" data-act="home">← Trang chủ</button><div class="row"><button class="btn sm" data-act="review">Xem lại bài làm</button><button class="btn sm" data-act="retake">Làm lại đề này</button></div></div>
+    <div><div class="label">Kết quả</div><h1 style="font-size:26px;margin-top:4px">${esc(S.exam.title)}</h1></div>
+    <div class="bands"><div class="band overall"><span class="label">Overall</span><span class="v">${ov != null ? ov.toFixed(1) : "–"}</span><small>${allFour ? (ov != null ? "Trung bình 4 kỹ năng" : "Chấm Writing & Speaking để có Overall") : "Cần đủ 4 kỹ năng"}</small></div>${ORDER.map(tile).join("")}</div>
+    ${S.exam.answerSource !== "key" ? `<div class="note">${S.exam.answerSource === "none" ? "Đề không có đáp án nên không chấm được phần trắc nghiệm." : "Một số đáp án do Claude tự giải (đánh dấu “AI”). Điểm chỉ mang tính tham khảo — hãy đối chiếu với đáp án chính thức nếu có."}</div>` : ""}
+    ${secs.map(s => {
+      if (scored[s.skill]) return reviewTable(s, scored[s.skill]);
+      if (s.skill === "writing") return writingResult(s);
+      return speakingResult(s);
+    }).join("")}
+  </div>`;
+}
+function reviewTable(sec, sc) {
+  const aiMark = S.exam.answerSource !== "key" ? ` <span class="pill warn" title="Đáp án có thể do Claude tự giải">AI</span>` : "";
+  const transcripts = sec.skill === "listening" ? sec.parts.filter(p => p.passage).map(p => `<details><summary>Transcript — ${esc(p.title)}</summary><div class="transcript">${esc(p.passage)}</div></details>`).join("") : "";
+  return `<section style="display:grid;gap:10px"><div class="row" style="justify-content:space-between"><h2 style="font-size:20px">${SKILL[sec.skill].name}</h2><span class="pill acc">${sc.raw} / ${sc.total - sc.unknown}</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Câu</th><th>Bạn trả lời</th><th>Đáp án${aiMark}</th><th></th></tr></thead><tbody>
+    ${sc.rows.map(r => `<tr class="${r.ok === true ? "right" : r.ok === false ? "wrong" : ""}"><td class="n">${r.q.n}${r.q.kind === "multi" && r.q.select > 1 ? "–" + (r.q.n + r.q.select - 1) : ""}</td><td>${r.user ? esc(r.user) : `<span class="muted">(bỏ trống)</span>`}</td><td>${esc(r.q.answer.join(" / ")) || `<span class="muted">không có</span>`}</td><td class="mark">${r.ok === true ? "✓" : r.ok === false ? "✗" : r.ok === "part" ? `${r.hit}/${r.q.select}` : ""}</td></tr>`).join("")}
+    </tbody></table></div>${transcripts}</section>`;
+}
+function critHTML(g, names) {
+  return `<div class="crit">${names.map(([k, label]) => `<div><span class="label">${label}</span><b>${g.criteria?.[k] != null ? Number(g.criteria[k]).toFixed(1) : "–"}</b></div>`).join("")}</div>`;
+}
+function listHTML(title, arr) { return arr?.length ? `<div><b>${title}</b><ul>${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""; }
+function writingResult(sec) {
+  const g = S.grades.writing;
+  return `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="font-size:20px">Writing</h2>
+    ${cap.sample ? `<button class="btn ${g ? "" : "primary"} sm" data-act="gradeW">${g ? "Chấm lại" : "Chấm bằng Claude"}</button>` : `<span class="muted" style="font-size:13px">Chấm tự động cần mở trang trong claude.ai</span>`}</div>
+    ${sec.tasks.map((t, i) => { const tx = S.writing["w" + i] || ""; return `<details><summary>Task ${t.n} · ${words(tx)} từ</summary><div class="transcript">${esc(tx) || "(chưa viết)"}</div></details>`; }).join("")}
+    <div id="gradeW">${g ? gradeWHTML(g) : ""}</div></section>`;
+}
+function gradeWHTML(g) {
+  return `<div style="display:grid;gap:12px">${(g.tasks || []).map(t => `<div style="display:grid;gap:8px"><div class="row"><b>Task ${esc(t.n)}</b><span class="pill acc">Band ${Number(t.band).toFixed(1)}</span></div>${critHTML(t, [["TA", t.n == 1 ? "Task Achievement" : "Task Response"], ["CC", "Coherence & Cohesion"], ["LR", "Lexical Resource"], ["GRA", "Grammar"]])}<div class="fb">${listHTML("Điểm mạnh", t.strengths)}${listHTML("Cần cải thiện", t.improvements)}${listHTML("Sửa câu mẫu", t.corrections)}</div></div>`).join("")}<div class="muted" style="font-size:13px">Band Writing = Task 2 tính hệ số 2. Đây là ước tính của Claude, không thay thế giám khảo.</div></div>`;
+}
+function speakingResult(sec) {
+  const g = S.grades.speaking;
+  return `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="font-size:20px">Speaking</h2>
+    ${cap.sample ? `<button class="btn ${g ? "" : "primary"} sm" data-act="gradeS">${g ? "Chấm lại" : "Chấm bằng Claude"}</button>` : `<span class="muted" style="font-size:13px">Chấm tự động cần mở trang trong claude.ai</span>`}</div>
+    <div id="gradeS">${g ? `<div style="display:grid;gap:10px">${critHTML(g, [["FC", "Fluency & Coherence"], ["LR", "Lexical Resource"], ["GRA", "Grammar"], ["P", "Pronunciation"]])}<div class="fb">${listHTML("Nhận xét", g.feedback)}${listHTML("Gợi ý nâng band", g.improvements)}</div><div class="muted" style="font-size:13px">Pronunciation không chấm được từ văn bản; band Speaking tính trên 3 tiêu chí còn lại.</div></div>` : ""}</div></section>`;
+}
+let gradeCtl = null;
+async function gradeWriting() {
+  const sec = S.exam.sections.find(s => s.skill === "writing"), box = $("#gradeW");
+  const items = sec.tasks.map((t, i) => ({ n: t.n, prompt: t.prompt, visual: t.visual, minWords: t.minWords, essay: S.writing["w" + i] || "" }));
+  if (items.every(x => !x.essay.trim())) { toast("Bạn chưa viết bài nào."); return; }
+  box.innerHTML = `<div class="muted">Claude đang chấm… (thường mất 20–60 giây)</div>`;
+  gradeCtl = new AbortController();
+  try {
+    const r = await cap.sample.json(`You are a certified IELTS Writing examiner. Assess each response strictly using the official public band descriptors (Task Achievement/Response, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy). Penalise under-length responses and off-topic writing as examiners do. An empty response scores 0.
+Write all feedback in Vietnamese; quote English phrases from the essay where useful.
+Return ONLY JSON: {"tasks":[{"n":number,"band":number,"criteria":{"TA":number,"CC":number,"LR":number,"GRA":number},"strengths":[string],"improvements":[string],"corrections":[string]}]}
+Bands in 0.5 steps. "corrections": up to 4 items, each "câu gốc → câu sửa (lý do)".
+
+${items.map(x => `=== TASK ${x.n} (min ${x.minWords} words; this response has ${words(x.essay)} words) ===\nPROMPT:\n${x.prompt}\n${x.visual ? "VISUAL DATA:\n" + x.visual + "\n" : ""}RESPONSE:\n${x.essay || "(blank)"}`).join("\n\n")}`, { signal: gradeCtl.signal, modelTier: "default", cache: false });
+    const tasks = Array.isArray(r?.tasks) ? r.tasks : [];
+    const t1 = tasks.find(t => t.n == 1), t2 = tasks.find(t => t.n == 2);
+    let ov = t1 && t2 ? (Number(t1.band) + 2 * Number(t2.band)) / 3 : Number((t2 || t1)?.band);
+    ov = Math.round(ov * 2) / 2;
+    S.grades.writing = { tasks, overall: Number.isFinite(ov) ? ov : null };
+    save(); render();
+  } catch (e) { box.innerHTML = `<div class="err">${esc(errText(e))}</div>`; }
+}
+async function gradeSpeaking() {
+  const sec = S.exam.sections.find(s => s.skill === "speaking"), box = $("#gradeS");
+  const qa = sec.prompts.map((p, i) => `[Part ${p.part}] ${p.text}${p.bullets.length ? " (" + p.bullets.join("; ") + ")" : ""}\nCANDIDATE: ${S.speaking["s" + i] || "(no answer)"}`).join("\n\n");
+  if (sec.prompts.every((p, i) => !(S.speaking["s" + i] || "").trim())) { toast("Chưa có câu trả lời nào để chấm."); return; }
+  box.innerHTML = `<div class="muted">Claude đang chấm…</div>`;
+  try {
+    const r = await cap.sample.json(`You are a certified IELTS Speaking examiner. Below is a transcript of a candidate's answers (from speech recognition or typed notes). Assess Fluency & Coherence, Lexical Resource and Grammatical Range & Accuracy with the official band descriptors. Pronunciation cannot be assessed from text: set it to null. Very short or missing answers lower the scores.
+Write feedback in Vietnamese. Return ONLY JSON: {"criteria":{"FC":number,"LR":number,"GRA":number,"P":null},"feedback":[string],"improvements":[string]} with bands in 0.5 steps.
+
+${qa}`, { modelTier: "default", cache: false });
+    const c = r?.criteria || {}, vals = [c.FC, c.LR, c.GRA].map(Number).filter(Number.isFinite);
+    const ov = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 2) / 2 : null;
+    S.grades.speaking = { ...r, overall: ov }; save(); render();
+  } catch (e) { box.innerHTML = `<div class="err">${esc(errText(e))}</div>`; }
+}
+
+/* =================== TTS for listening transcripts =================== */
+function speakTranscript() {
+  const t = cap.tts; if (!t) return;
+  if (S.ttsState !== "idle") { t.stop().catch(() => {}); return; }
+  const part = curSec().parts[S.part];
+  const voices = ["buttery", "airy", "glassy", "rounded"], who = {};
+  const lines = [];
+  for (const raw of part.passage.split(/\n+/)) {
+    const m = raw.match(/^\s*([A-Z][A-Za-z .'-]{0,24}):\s*(.+)$/);
+    const spk = m ? m[1].trim() : "_", text = (m ? m[2] : raw).trim(); if (!text) continue;
+    if (!(spk in who)) who[spk] = voices[Object.keys(who).length % voices.length];
+    for (let i = 0; i < text.length; i += 1900) lines.push({ text: text.slice(i, i + 1900), voice: who[spk], language: "en" });
+  }
+  t.speak(lines).catch(e => { if (e?.code && !["viewer_stopped", "cancelled", "interrupted"].includes(e.code)) toast("Không phát được giọng đọc (" + e.code + ")."); });
+}
+
+/* =================== events =================== */
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-act],[data-sec],[data-part],[data-task],[data-goto],[data-flag],[data-mode],[data-module],[data-mic]");
+  if (!el) return;
+  const a = el.dataset.act;
+  if (el.dataset.sec != null) { S.sec = +el.dataset.sec; S.part = 0; S.task = 0; render(); save(); return; }
+  if (el.dataset.part != null) { S.part = +el.dataset.part; render(); save(); $(".pane")?.scrollTo(0, 0); return; }
+  if (el.dataset.task != null) { S.task = +el.dataset.task; render(); save(); return; }
+  if (el.dataset.goto) { if (+el.dataset.gp !== S.part) { S.part = +el.dataset.gp; render(); } document.getElementById("q-" + el.dataset.goto)?.scrollIntoView({ behavior: "smooth", block: "center" }); document.querySelector(`[data-q="${el.dataset.goto}"],[data-qm="${el.dataset.goto}"]`)?.focus({ preventScroll: true }); return; }
+  if (el.dataset.flag) { e.preventDefault(); const id = el.dataset.flag; S.flags[id] = !S.flags[id]; if (!S.flags[id]) delete S.flags[id]; render(); save(); document.getElementById("q-" + id)?.scrollIntoView({ block: "center" }); return; }
+  if (el.dataset.mode) { S.mode = el.dataset.mode; render(); return; }
+  if (el.dataset.module) { S.exam.module = el.dataset.module; render(); return; }
+  if (el.dataset.mic) {
+    const d = cap.dictation; if (!d) return;
+    if (S.micOn) { await d.stop().catch(() => {}); if (S.micTarget === el.dataset.mic) return; }
+    S.micTarget = el.dataset.mic;
+    d.start().catch(err => toast(err?.code === "not_granted" ? "Bạn đã tắt micro cho trang này — hãy gõ câu trả lời." : "Không bật được micro."));
+    return;
+  }
+  switch (a) {
+    case "sample": S.examId = addToLib(normalizeExam(SAMPLE)); openReady(normalizeExam(SAMPLE)); break;
+    case "pasteGo": { const t = $("#pasteIn").value.trim(); if (t.length < 40) { toast("Hãy dán nội dung đề đầy đủ hơn."); return; } importFile(null, t); break; }
+    case "cancelParse": parseCtl?.abort(); closeLayer(); break;
+    case "closeLayer": closeLayer(); break;
+    case "home": clearInterval(tick); S.view = "home"; render(); break;
+    case "libOpen": { const x = LIB.find(x => x.id === el.dataset.id); if (x) { S.examId = x.id; openReady(x.exam); } break; }
+    case "libDel": LIB = LIB.filter(x => x.id !== el.dataset.id); store.set("ielts.lib", LIB); render(); break;
+    case "resume": { const s = store.get("ielts.session", null); if (s) { Object.assign(S, s); render(); if (S.view === "exam") startTimer(); } break; }
+    case "dropSession": store.del("ielts.session"); render(); break;
+    case "keySave": { const v = $("#keyIn").value.trim(); if (!/^sk-ant-/.test(v)) { toast("Khoá API phải bắt đầu bằng sk-ant-"); return; } try { localStorage.setItem(KEY_STORE, v); } catch { toast("Trình duyệt chặn lưu khoá."); return; } cap.sample = makeApiSample(); cap.viaApi = true; render(); toast("Đã lưu khoá. Claude sẵn sàng."); break; }
+    case "keyDel": try { localStorage.removeItem(KEY_STORE); } catch {} cap.sample = null; cap.viaApi = false; render(); break;
+    case "start":
+      if (!activeSecs().length) { toast("Hãy chọn ít nhất một kỹ năng."); return; }
+      S.sec = 0; S.part = 0; S.task = 0; S.view = "exam";
+      activeSecs().forEach(s => { S.timeLeft[s.skill] = s.minutes * 60; S.elapsed[s.skill] = 0; });
+      render(); startTimer(); save(); break;
+    case "saveJson":
+      try { await cap.downloads.save({ filename: (S.exam.title.replace(/[^\w\- ]+/g, "").trim() || "ielts-test") + ".json", data: new Blob([JSON.stringify(S.exam, null, 2)], { type: "application/json" }) }); } catch (err) { if (err?.code && err.code !== "cancelled" && err.code !== "declined") toast("Không lưu được file."); }
+      break;
+    case "prevPart": if (S.part > 0) { S.part--; render(); } break;
+    case "nextPart": S.part++; render(); break;
+    case "tts": speakTranscript(); break;
+    case "prep": runPrep(el.dataset.id); break;
+    case "submit": {
+      const secs = activeSecs(); let blank = 0;
+      secs.forEach(s => s.parts.forEach(p => p.groups.forEach(g => g.questions.forEach(q => { const v = S.answers[q.id]; if (!(Array.isArray(v) ? v.length : String(v ?? "").trim())) blank++; }))));
+      confirmBox("Nộp bài?", `<p>${blank ? `Bạn còn <b>${blank}</b> câu trắc nghiệm bỏ trống. ` : ""}Sau khi nộp sẽ không sửa được bài.</p>`, "Nộp bài", finish);
+      break;
+    }
+    case "review": S.view = "exam"; activeSecs().forEach(s => S.locked[s.skill] = true); render(); break;
+    case "retake": openReady(S.exam); break;
+    case "gradeW": gradeWriting(); break;
+    case "gradeS": gradeSpeaking(); break;
+  }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "fileIn" && t.files.length) { importFile(t.files); t.value = ""; return; }
+  if (t.id === "audioIn" && t.files[0]) { const k = S.part; if (audioURLs[k]) URL.revokeObjectURL(audioURLs[k]); audioURLs[k] = URL.createObjectURL(t.files[0]); if (k === 0 && !audioURLs.all) audioURLs.all = audioURLs[k]; render(); return; }
+  if (t.dataset.sel) { S.sel[t.dataset.sel] = t.checked; render(); return; }
+  if (t.dataset.qm) {
+    const id = t.dataset.qm, max = +t.dataset.max;
+    let v = S.answers[id] || [];
+    v = t.checked ? [...v, t.value] : v.filter(x => x !== t.value);
+    if (v.length > max) { t.checked = false; v = v.filter(x => x !== t.value); toast(`Chỉ chọn ${max} đáp án.`); }
+    S.answers[id] = v; railPaint(); save(); return;
+  }
+  if (t.dataset.q) { S.answers[t.dataset.q] = t.value; railPaint(); save(); }
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.dataset.q && t.tagName === "INPUT" && t.type !== "radio") { S.answers[t.dataset.q] = t.value; railPaint(); clearTimeout(t._t); t._t = setTimeout(save, 500); }
+  if (t.dataset.spk) { S.speaking[t.dataset.spk] = t.value; clearTimeout(t._t); t._t = setTimeout(save, 500); }
+});
+function railPaint() {
+  document.querySelectorAll(".nums [data-goto]").forEach(b => { const v = S.answers[b.dataset.goto]; b.classList.toggle("ans", !!(Array.isArray(v) ? v.length : String(v ?? "").trim())); });
+}
+document.addEventListener("dragover", e => { const d = $("#drop"); if (d) { e.preventDefault(); d.classList.add("over"); } });
+document.addEventListener("dragleave", e => { if (!e.relatedTarget) $("#drop")?.classList.remove("over"); });
+document.addEventListener("drop", e => { const d = $("#drop"); if (!d) return; e.preventDefault(); d.classList.remove("over"); const f = e.dataTransfer?.files; if (f?.length) importFile(f); });
+
+render();
+initCaps();
+</script>
